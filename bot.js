@@ -9,7 +9,7 @@ const client = new Client({
     ] 
 });
 
-const TOKEN = 'MTQ1NjQ0MzQ5MzM1MzUyMTE5Mw.GwCYH0.i98-JR3-nA2glo9Bekjv2yDzuZKUbOSdc9iI1A';
+const TOKEN = process.env.TOKEN
 
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} udah online!`);
