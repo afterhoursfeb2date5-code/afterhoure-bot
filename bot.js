@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder } = require('discord.js');
 
 const client = new Client({ 
     intents: [
@@ -9,33 +9,87 @@ const client = new Client({
     ] 
 });
 
-const TOKEN = process.env.TOKEN
+const TOKEN = process.env.TOKEN;
+const CLIENT_ID = process.env.CLIENT_ID;
+
+// Register slash commands
+const commands = [
+    new SlashCommandBuilder()
+        .setName('setuproles')
+        .setDescription('Setup role selection menus (Admin only)')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('admin-embed')
+        .setDescription('Send a custom embed with buttons to a channel (Admin only)')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Channel to send the embed to')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('title')
+                .setDescription('Embed title')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('description')
+                .setDescription('Embed description')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('color')
+                .setDescription('Embed color (hex, e.g., #FF0000)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('image')
+                .setDescription('Image URL')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('button1')
+                .setDescription('Button 1 (format: name|url|emoji)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('button2')
+                .setDescription('Button 2 (format: name|url|emoji)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('button3')
+                .setDescription('Button 3 (format: name|url|emoji)')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+].map(command => command.toJSON());
+
+const rest = new REST({ version: '10' }).setToken(TOKEN);
+
+(async () => {
+    try {
+        console.log('🔄 Registering slash commands...');
+        await rest.put(
+            Routes.applicationCommands(CLIENT_ID),
+            { body: commands }
+        );
+        console.log('✅ Slash commands registered!');
+    } catch (error) {
+        console.error('❌ Error registering commands:', error);
+    }
+})();
 
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
+    client.user.setActivity('/setuproles | /admin-embed', { type: 'WATCHING' });
 });
 
-// Command untuk bikin role selection menu (Admin only)
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-    if (!message.content.startsWith('!')) return;
+// Handle interactions (slash commands & components)
+client.on('interactionCreate', async (interaction) => {
+    // Handle slash commands
+    if (interaction.isCommand()) {
+        const { commandName } = interaction;
 
-    const args = message.content.slice(1).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-
-    // Command !setuproles - Bikin role selection menu
-    if (command === 'setuproles') {
-        // Check admin permission
-        if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return message.reply('❌ Lu harus admin buat pake command ini!');
-        }
-
-        // Character Catalog Embed & Menu
-        const characterEmbed = new EmbedBuilder()
-            .setColor('#00D9FF')
-            .setTitle('Character Catalog')
-            .setDescription(`Silahkan pilih character yang sesuai dengan kamu!
+        if (commandName === 'setuproles') {
+            try {
+                // Character Catalog Embed & Menu
+                const characterEmbed = new EmbedBuilder()
+                    .setColor('#808080')
+                    .setTitle('Character Catalog')
+                    .setDescription(`Silahkan pilih character yang sesuai dengan kamu!
 
 😍 | **Fineshyt** 
 😎 | **Sigma** 
@@ -50,83 +104,83 @@ client.on('messageCreate', async (message) => {
 💿 | **Performative**
 🥴 | **Delulu**
 😒 | **Nonchalant** `)
-            .setImage('https://imgur.com/LLi6XfL.png')
-            .setFooter({ text: 'Mickey Mouse Trap House' })
-            .setTimestamp();
+                    .setImage('https://imgur.com/LLi6XfL.png')
+                    .setFooter({ text: 'Mickey Mouse Trap House' })
+                    .setTimestamp();
 
-        const characterMenu = new ActionRowBuilder()
-            .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('character_roles')
-                    .setPlaceholder('Click menu ini untuk memilih roles!')
-                    .setMinValues(0)
-                    .setMaxValues(13)
-                    .addOptions([
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Fineshyt')
-                            .setValue('fineshyt')
-                            .setEmoji('😍'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Sigma')
-                            .setValue('sigma')
-                            .setEmoji('😎'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Imup')
-                            .setValue('imup')
-                            .setEmoji('🥺'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Narcissist')
-                            .setValue('narcissist')
-                            .setEmoji('😏'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Mpruyy')
-                            .setValue('mpruyy')
-                            .setEmoji('😜'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Chalant')
-                            .setValue('chalant')
-                            .setEmoji('😆'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Otaku')
-                            .setValue('otaku')
-                            .setEmoji('🧐'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Yapper')
-                            .setValue('yapper')
-                            .setEmoji('🗣️'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Kalcer')
-                            .setValue('kalcer')
-                            .setEmoji('🤩'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Suki')
-                            .setValue('suki')
-                            .setEmoji('🤓'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Performative')
-                            .setValue('performative')
-                            .setEmoji('💿'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Delulu')
-                            .setValue('delulu')
-                            .setEmoji('🥴'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Nonchalant')
-                            .setValue('nonchalant')
-                            .setEmoji('😒'),
-                    ])
-            );
+                const characterMenu = new ActionRowBuilder()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('character_roles')
+                            .setPlaceholder('Click menu ini untuk memilih roles!')
+                            .setMinValues(0)
+                            .setMaxValues(13)
+                            .addOptions([
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Fineshyt')
+                                    .setValue('fineshyt')
+                                    .setEmoji('😍'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Sigma')
+                                    .setValue('sigma')
+                                    .setEmoji('😎'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Imup')
+                                    .setValue('imup')
+                                    .setEmoji('🥺'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Narcissist')
+                                    .setValue('narcissist')
+                                    .setEmoji('😏'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Mpruyy')
+                                    .setValue('mpruyy')
+                                    .setEmoji('😜'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Chalant')
+                                    .setValue('chalant')
+                                    .setEmoji('😆'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Otaku')
+                                    .setValue('otaku')
+                                    .setEmoji('🧐'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Yapper')
+                                    .setValue('yapper')
+                                    .setEmoji('🗣️'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Kalcer')
+                                    .setValue('kalcer')
+                                    .setEmoji('🤩'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Suki')
+                                    .setValue('suki')
+                                    .setEmoji('🤓'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Performative')
+                                    .setValue('performative')
+                                    .setEmoji('💿'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Delulu')
+                                    .setValue('delulu')
+                                    .setEmoji('🥴'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Nonchalant')
+                                    .setValue('nonchalant')
+                                    .setEmoji('😒'),
+                            ])
+                    );
 
-        await message.channel.send({ 
-            embeds: [characterEmbed], 
-            components: [characterMenu] 
-        });
+                await interaction.channel.send({ 
+                    embeds: [characterEmbed], 
+                    components: [characterMenu] 
+                });
 
-        // Gaming Roles Embed & Menu
-        const gamingEmbed = new EmbedBuilder()
-            .setColor('#00D9FF')
-            .setTitle('Games Catalog')
-            .setDescription(`Pilih game yang kamu mainkan!
+                // Gaming Roles Embed & Menu
+                const gamingEmbed = new EmbedBuilder()
+                    .setColor('#808080')
+                    .setTitle('Games Catalog')
+                    .setDescription(`Pilih game yang kamu mainkan!
 
 🔫 | **Valorant**
 ⚔️ | **Mobile Legends**
@@ -138,127 +192,190 @@ client.on('messageCreate', async (message) => {
 💣 | **Call of Duty**
 🎪 | **Apex Legends**
 🏗️ | **Fortnite**`)
-            .setImage('https://i.imgur.com/LwqQEPT.png')
-            .setFooter({ text: 'Mickey Mouse Trap House' })
-            .setTimestamp();
+                    .setImage('https://i.imgur.com/LwqQEPT.png')
+                    .setFooter({ text: 'Mickey Mouse Trap House' })
+                    .setTimestamp();
 
-        const gamingMenu = new ActionRowBuilder()
-            .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('gaming_roles')
-                    .setPlaceholder('Click menu ini untuk memilih roles!')
-                    .setMinValues(0)
-                    .setMaxValues(10)
-                    .addOptions([
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Valorant')
-                            .setValue('valorant')
-                            .setEmoji('🔫'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Mobile Legends')
-                            .setValue('mobile_legends')
-                            .setEmoji('⚔️'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('PUBG Mobile')
-                            .setValue('pubg_mobile')
-                            .setEmoji('🎯'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Genshin Impact')
-                            .setValue('genshin')
-                            .setEmoji('⚡'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Minecraft')
-                            .setValue('minecraft')
-                            .setEmoji('⛏️'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Roblox')
-                            .setValue('roblox')
-                            .setEmoji('🎮'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Free Fire')
-                            .setValue('free_fire')
-                            .setEmoji('🔥'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Call of Duty Mobile')
-                            .setValue('codm')
-                            .setEmoji('💣'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Apex Legends')
-                            .setValue('apex')
-                            .setEmoji('🎪'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Fortnite')
-                            .setValue('fortnite')
-                            .setEmoji('🏗️'),
-                    ])
-            );
+                const gamingMenu = new ActionRowBuilder()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('gaming_roles')
+                            .setPlaceholder('Click menu ini untuk memilih roles!')
+                            .setMinValues(0)
+                            .setMaxValues(10)
+                            .addOptions([
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Valorant')
+                                    .setValue('valorant')
+                                    .setEmoji('🔫'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Mobile Legends')
+                                    .setValue('mobile_legends')
+                                    .setEmoji('⚔️'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('PUBG Mobile')
+                                    .setValue('pubg_mobile')
+                                    .setEmoji('🎯'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Genshin Impact')
+                                    .setValue('genshin')
+                                    .setEmoji('⚡'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Minecraft')
+                                    .setValue('minecraft')
+                                    .setEmoji('⛏️'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Roblox')
+                                    .setValue('roblox')
+                                    .setEmoji('🎮'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Free Fire')
+                                    .setValue('free_fire')
+                                    .setEmoji('🔥'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Call of Duty Mobile')
+                                    .setValue('codm')
+                                    .setEmoji('💣'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Apex Legends')
+                                    .setValue('apex')
+                                    .setEmoji('🎪'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Fortnite')
+                                    .setValue('fortnite')
+                                    .setEmoji('🏗️'),
+                            ])
+                    );
 
-        await message.channel.send({ 
-            embeds: [gamingEmbed], 
-            components: [gamingMenu] 
-        });
+                await interaction.channel.send({ 
+                    embeds: [gamingEmbed], 
+                    components: [gamingMenu] 
+                });
 
-        // Hobbies Embed & Menu
-        const hobbiesEmbed = new EmbedBuilder()
-            .setColor('#00D9FF')
-            .setTitle('Hobbies Catalog')
-            .setDescription(`Pilih hobby kamu!
+                // Hobbies Embed & Menu
+                const hobbiesEmbed = new EmbedBuilder()
+                    .setColor('#808080')
+                    .setTitle('Hobbies Catalog')
+                    .setDescription(`Pilih hobby kamu!
 
 👔 | **Fashion**
 🎬 | **Entertainment**
 🎵 | **Music**
 ⚽ | **Sports**
 🎨 | **Art & Design**`)
-            .setImage('https://i.imgur.com/UFP0ybB.png')
-            .setFooter({ text: 'Mickey Mouse Trap House' })
-            .setTimestamp();
+                    .setImage('https://i.imgur.com/UFP0ybB.png')
+                    .setFooter({ text: 'Mickey Mouse Trap House' })
+                    .setTimestamp();
 
-        const hobbiesMenu = new ActionRowBuilder()
-            .addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('hobbies_roles')
-                    .setPlaceholder('Click menu ini untuk memilih roles!')
-                    .setMinValues(0)
-                    .setMaxValues(5)
-                    .addOptions([
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Fashion')
-                            .setValue('fashion')
-                            .setEmoji('👔'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Entertainment')
-                            .setValue('entertainment')
-                            .setEmoji('🎬'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Music')
-                            .setValue('music')
-                            .setEmoji('🎵'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Sports')
-                            .setValue('sports')
-                            .setEmoji('⚽'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('Art & Design')
-                            .setValue('art')
-                            .setEmoji('🎨'),
-                    ])
-            );
+                const hobbiesMenu = new ActionRowBuilder()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('hobbies_roles')
+                            .setPlaceholder('Click menu ini untuk memilih roles!')
+                            .setMinValues(0)
+                            .setMaxValues(5)
+                            .addOptions([
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Fashion')
+                                    .setValue('fashion')
+                                    .setEmoji('👔'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Entertainment')
+                                    .setValue('entertainment')
+                                    .setEmoji('🎬'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Music')
+                                    .setValue('music')
+                                    .setEmoji('🎵'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Sports')
+                                    .setValue('sports')
+                                    .setEmoji('⚽'),
+                                new StringSelectMenuOptionBuilder()
+                                    .setLabel('Art & Design')
+                                    .setValue('art')
+                                    .setEmoji('🎨'),
+                            ])
+                    );
 
-        await message.channel.send({ 
-            embeds: [hobbiesEmbed], 
-            components: [hobbiesMenu] 
-        });
+                await interaction.channel.send({ 
+                    embeds: [hobbiesEmbed], 
+                    components: [hobbiesMenu] 
+                });
 
-        message.reply('✅ Role selection menu udah di-setup!');
+                await interaction.reply({ content: '✅ Role selection menu udah di-setup!', ephemeral: true });
+            } catch (error) {
+                console.error('Error setting up roles:', error);
+                await interaction.reply({ content: '❌ Error saat setup menu!', ephemeral: true });
+            }
+        }
+
+        if (commandName === 'admin-embed') {
+            try {
+                const channel = interaction.options.getChannel('channel');
+                const title = interaction.options.getString('title');
+                const description = interaction.options.getString('description');
+                const color = interaction.options.getString('color') || '#808080';
+                const imageUrl = interaction.options.getString('image');
+                const button1 = interaction.options.getString('button1');
+                const button2 = interaction.options.getString('button2');
+                const button3 = interaction.options.getString('button3');
+
+                // Create embed
+                const embed = new EmbedBuilder()
+                    .setTitle(title)
+                    .setDescription(description)
+                    .setColor(color)
+                    .setFooter({ text: 'Mickey Mouse Trap House' })
+                    .setTimestamp();
+
+                if (imageUrl) {
+                    embed.setImage(imageUrl);
+                }
+
+                // Parse buttons
+                const buttonRow = new ActionRowBuilder();
+                const buttons = [button1, button2, button3].filter(b => b);
+
+                for (const buttonString of buttons) {
+                    const [btnName, btnUrl, btnEmoji] = buttonString.split('|').map(s => s.trim());
+                    
+                    if (btnName && btnUrl) {
+                        const button = new ButtonBuilder()
+                            .setLabel(btnName)
+                            .setURL(btnUrl)
+                            .setStyle(ButtonStyle.Link);
+
+                        if (btnEmoji) {
+                            button.setEmoji(btnEmoji);
+                        }
+
+                        buttonRow.addComponents(button);
+                    }
+                }
+
+                // Send embed
+                if (buttonRow.components.length > 0) {
+                    await channel.send({ 
+                        embeds: [embed], 
+                        components: [buttonRow] 
+                    });
+                } else {
+                    await channel.send({ embeds: [embed] });
+                }
+
+                await interaction.reply({ content: '✅ Embed berhasil dikirim!', ephemeral: true });
+            } catch (error) {
+                console.error('Error sending embed:', error);
+                await interaction.reply({ content: '❌ Error saat mengirim embed!', ephemeral: true });
+            }
+        }
     }
-});
 
-// Handle role selection
-client.on('interactionCreate', async (interaction) => {
-    if (!interaction.isStringSelectMenu()) return;
-
-    try {
-        const selectedValues = interaction.values;
+    // Handle string select menus
+    if (interaction.isStringSelectMenu()) {
+        try {
+            const selectedValues = interaction.values;
         const member = interaction.member;
 
         // Mapping role values ke role names
@@ -340,11 +457,11 @@ client.on('interactionCreate', async (interaction) => {
         if (addedRoles.length > 0) {
             const addedText = addedRoles.map(roleName => {
                 const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-                return `✅ ${role ? `<@&${role.id}>` : `@${roleName}`}`;
+                return `${role ? `<@&${role.id}>` : `@${roleName}`}`;
             }).join('\n');
             
             responseEmbed.addFields({
-                name: '📥 Added Roles',
+                name: '✅ Added Roles',
                 value: addedText,
                 inline: false
             });
@@ -353,11 +470,11 @@ client.on('interactionCreate', async (interaction) => {
         if (removedRoles.length > 0) {
             const removedText = removedRoles.map(roleName => {
                 const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-                return `❌ ${role ? `<@&${role.id}>` : `@${roleName}`}`;
+                return `${role ? `<@&${role.id}>` : `@${roleName}`}`;
             }).join('\n');
             
             responseEmbed.addFields({
-                name: '📤 Removed Roles',
+                name: '❌ Removed Roles',
                 value: removedText,
                 inline: false
             });
@@ -371,10 +488,15 @@ client.on('interactionCreate', async (interaction) => {
             responseEmbed.setColor('#00D9FF');
         }
 
-        await interaction.reply({ 
+        const msg = await interaction.reply({ 
             embeds: [responseEmbed], 
             ephemeral: true 
         });
+
+        // Auto-delete message setelah 5 detik
+        setTimeout(() => {
+            msg.delete().catch(() => {});
+        }, 3000);
     } catch (error) {
         console.error('Error handling role selection:', error);
         
@@ -384,10 +506,16 @@ client.on('interactionCreate', async (interaction) => {
             .setDescription('Ada error pas update roles. Pastikan bot punya permission yang cukup!')
             .setTimestamp();
         
-        await interaction.reply({ 
+        const msg = await interaction.reply({ 
             embeds: [errorEmbed], 
             ephemeral: true 
         });
+
+        // Auto-delete message setelah 3 detik
+        setTimeout(() => {
+            msg.delete().catch(() => {});
+        }, 3000);
+    }
     }
 });
 
