@@ -480,9 +480,12 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
     }
+
+    // Handle string select menus
+    if (interaction.isStringSelectMenu()) {
         try {
             const selectedValues = interaction.values;
-        const member = interaction.member;
+            const member = interaction.member;
 
         // Mapping role values ke role names
         const roleMapping = {
@@ -614,7 +617,7 @@ client.on('interactionCreate', async (interaction) => {
         setTimeout(() => {
             msg.delete().catch(() => {});
         }, 3000);
-    } catch (error) {
+            } catch (error) {
         console.error('Error handling role selection:', error);
         
         const errorEmbed = new EmbedBuilder()
@@ -632,7 +635,6 @@ client.on('interactionCreate', async (interaction) => {
         setTimeout(() => {
             msg.delete().catch(() => {});
         }, 3000);
-    }
     }
 });
 
