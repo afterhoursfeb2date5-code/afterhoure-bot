@@ -531,6 +531,7 @@ client.on('interactionCreate', async (interaction) => {
 
         const addedRoles = [];
         const removedRoles = [];
+        const missingRoles = [];
 
         // Remove roles yang ga dipilih
         for (const roleValue of allRolesInCategory) {
@@ -554,6 +555,8 @@ client.on('interactionCreate', async (interaction) => {
                     await member.roles.add(role);
                     addedRoles.push(roleName);
                 }
+            } else {
+                missingRoles.push(roleName);
             }
         }
 
@@ -586,6 +589,14 @@ client.on('interactionCreate', async (interaction) => {
             });
         }
 
+        if (missingRoles.length > 0) {
+            responseEmbed.addFields({
+                name: '⚠️ Missing Roles',
+                value: missingRoles.join('\n'),
+                inline: false
+            });
+        }
+
         if (addedRoles.length === 0 && removedRoles.length === 0) {
             responseEmbed
                 .setColor('#FFD700')
@@ -609,7 +620,7 @@ client.on('interactionCreate', async (interaction) => {
         const errorEmbed = new EmbedBuilder()
             .setColor('#FF0000')
             .setTitle('❌ Error')
-            .setDescription('Ada error pas update roles. Pastikan bot punya permission yang cukup!')
+            .setDescription(`Error: ${error.message}\n\nPastikan:\n1. Bot punya "Manage Roles" permission\n2. Role names cocok dengan setting`)
             .setTimestamp();
         
         const msg = await interaction.reply({ 
