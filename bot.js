@@ -114,6 +114,30 @@ const commands = [
                 .setDescription('Reason for the ban')
                 .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+    new SlashCommandBuilder()
+        .setName('kick')
+        .setDescription('Kick a user from the server (Admin only)')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User to kick')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('reason')
+                .setDescription('Reason for the kick')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+    new SlashCommandBuilder()
+        .setName('unban')
+        .setDescription('Unban a user from the server (Admin only)')
+        .addStringOption(option =>
+            option.setName('user_id')
+                .setDescription('User ID to unban')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('reason')
+                .setDescription('Reason for the unban')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -540,6 +564,90 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [banEmbed], ephemeral: true });
             } catch (error) {
                 console.error('Error banning user:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    ephemeral: true
+                });
+            }
+        }
+
+        if (commandName === 'kick') {
+            try {
+                const user = interaction.options.getUser('user');
+                const reason = interaction.options.getString('reason') || 'No reason provided';
+                const member = interaction.guild.members.cache.get(user.id);
+
+                // Check if user exists
+                if (!member) {
+                    return await interaction.reply({
+                        content: '❌ User not found in this server!',
+                        ephemeral: true
+                    });
+                }
+
+                // Check if user is kickable
+                if (!member.kickable) {
+                    return await interaction.reply({
+                        content: '❌ Cannot kick this user! (Role hierarchy issue)',
+                        ephemeral: true
+                    });
+                }
+
+                // Kick the user
+                await member.kick(reason);
+
+                const kickEmbed = new EmbedBuilder()
+                    .setColor('#FF6600')
+                    .setTitle('👢 User Kicked')
+                    .addFields(
+                        { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
+                        { name: 'Reason', value: reason, inline: true },
+                        { name: 'Kicked by', value: interaction.user.tag, inline: true }
+                    )
+                    .setThumbnail(user.displayAvatarURL())
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [kickEmbed], ephemeral: true });
+            } catch (error) {
+                console.error('Error kicking user:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    ephemeral: true
+                });
+            }
+        }
+
+        if (commandName === 'unban') {
+            try {
+                const userId = interaction.options.getString('user_id');
+                const reason = interaction.options.getString('reason') || 'No reason provided';
+
+                // Check if user is actually banned
+                const banInfo = await interaction.guild.bans.fetch(userId).catch(() => null);
+                
+                if (!banInfo) {
+                    return await interaction.reply({
+                        content: '❌ User is not banned on this server!',
+                        ephemeral: true
+                    });
+                }
+
+                // Unban the user
+                await interaction.guild.bans.remove(userId, reason);
+
+                const unbanEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ User Unbanned')
+                    .addFields(
+                        { name: 'User ID', value: userId, inline: true },
+                        { name: 'Reason', value: reason, inline: true },
+                        { name: 'Unbanned by', value: interaction.user.tag, inline: true }
+                    )
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [unbanEmbed], ephemeral: true });
+            } catch (error) {
+                console.error('Error unbanning user:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     ephemeral: true
