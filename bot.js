@@ -142,6 +142,38 @@ const commands = [
         .setName('embed-create')
         .setDescription('Create a custom embed with a modal (Admin only)')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('auto-respon')
+        .setDescription('Add an autoresponder (Admin only)')
+        .addStringOption(option =>
+            option.setName('sentence')
+                .setDescription('The trigger sentence')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('response')
+                .setDescription('The response message')
+                .setRequired(true))
+        .addBooleanOption(option =>
+            option.setName('mention')
+                .setDescription('Should the bot mention the user?')
+                .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('delete_trigger')
+                .setDescription('Should delete the trigger message?')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('auto-respon-list')
+        .setDescription('Show all stored autoresponses (Admin only)')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('auto-respon-remove')
+        .setDescription('Remove an autoresponse (Admin only)')
+        .addStringOption(option =>
+            option.setName('sentence')
+                .setDescription('The sentence to remove')
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -732,6 +764,127 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
         }
+
+        if (commandName === 'auto-respon') {
+            try {
+                const sentence = interaction.options.getString('sentence').toLowerCase();
+                const response = interaction.options.getString('response');
+                const mention = interaction.options.getBoolean('mention') || false;
+                const deleteTrigger = interaction.options.getBoolean('delete_trigger') || false;
+
+                // Initialize storage jika belum ada
+                if (!client.autoResponses) {
+                    client.autoResponses = new Map();
+                }
+
+                // Cek apakah sentence sudah ada
+                if (client.autoResponses.has(sentence)) {
+                    return await interaction.reply({
+                        content: `❌ Autoresponder untuk "${sentence}" sudah ada! Hapus terlebih dahulu menggunakan /auto-respon-remove`,
+                        flags: 64
+                    });
+                }
+
+                // Simpan autoresponse
+                client.autoResponses.set(sentence, {
+                    response: response,
+                    mention: mention,
+                    deleteTrigger: deleteTrigger,
+                    createdBy: interaction.user.tag,
+                    createdAt: new Date()
+                });
+
+                const addEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Autoresponder Ditambahkan')
+                    .addFields(
+                        { name: 'Trigger', value: `\`${sentence}\``, inline: true },
+                        { name: 'Response', value: response, inline: false },
+                        { name: 'Mention User', value: mention ? 'Yes' : 'No', inline: true },
+                        { name: 'Delete Trigger', value: deleteTrigger ? 'Yes' : 'No', inline: true }
+                    )
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [addEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error adding autoresponder:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'auto-respon-list') {
+            try {
+                if (!client.autoResponses || client.autoResponses.size === 0) {
+                    return await interaction.reply({
+                        content: '❌ Tidak ada autoresponder yang tersimpan!',
+                        flags: 64
+                    });
+                }
+
+                const listEmbed = new EmbedBuilder()
+                    .setColor('#00D9FF')
+                    .setTitle('📋 Daftar Autoresponder')
+                    .setDescription(`Total: ${client.autoResponses.size}`);
+
+                let counter = 1;
+                for (const [sentence, data] of client.autoResponses) {
+                    const value = `**Response:** ${data.response}\n**Mention:** ${data.mention ? 'Yes' : 'No'} | **Delete:** ${data.deleteTrigger ? 'Yes' : 'No'}`;
+                    listEmbed.addFields({
+                        name: `${counter}. \`${sentence}\``,
+                        value: value,
+                        inline: false
+                    });
+                    counter++;
+
+                    // Max 25 fields per embed
+                    if (counter > 25) break;
+                }
+
+                await interaction.reply({ embeds: [listEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error listing autoresponders:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'auto-respon-remove') {
+            try {
+                const sentence = interaction.options.getString('sentence').toLowerCase();
+
+                if (!client.autoResponses || !client.autoResponses.has(sentence)) {
+                    return await interaction.reply({
+                        content: `❌ Autoresponder untuk "${sentence}" tidak ditemukan!`,
+                        flags: 64
+                    });
+                }
+
+                client.autoResponses.delete(sentence);
+
+                const removeEmbed = new EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('✅ Autoresponder Dihapus')
+                    .addFields({
+                        name: 'Trigger',
+                        value: `\`${sentence}\``,
+                        inline: true
+                    })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [removeEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error removing autoresponder:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
     }
 
     // Handle modal submissions
@@ -1019,6 +1172,41 @@ client.on('interactionCreate', async (interaction) => {
                 msg.delete().catch(() => {});
             }, 3000);
         }
+    }
+});
+
+// Handle autoresponses
+client.on('messageCreate', async (message) => {
+    // Ignore bot messages
+    if (message.author.bot) return;
+
+    // Ignore DMs
+    if (!message.guild) return;
+
+    try {
+        if (client.autoResponses && client.autoResponses.size > 0) {
+            const messageContent = message.content.toLowerCase();
+
+            for (const [sentence, data] of client.autoResponses) {
+                if (messageContent.includes(sentence)) {
+                    // Delete trigger message jika enabled
+                    if (data.deleteTrigger) {
+                        await message.delete().catch(() => {});
+                    }
+
+                    // Send response
+                    const responseText = data.mention ? `${message.author}` : '';
+                    await message.reply({
+                        content: responseText ? `${responseText} ${data.response}` : data.response,
+                        allowedMentions: { repliedUser: data.mention }
+                    }).catch(() => {});
+
+                    break; // Hanya 1 autoresponse per message
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error handling autoresponse:', error);
     }
 });
 
