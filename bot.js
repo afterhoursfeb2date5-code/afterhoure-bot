@@ -159,7 +159,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     }
 })();
 
-client.once('ready', () => {
+client.once('clientReady', () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
     
@@ -406,10 +406,10 @@ client.on('interactionCreate', async (interaction) => {
                     components: [hobbiesMenu] 
                 });
 
-                await interaction.reply({ content: '✅ Role selection menu udah di-setup!', ephemeral: true });
+                await interaction.reply({ content: '✅ Role selection menu udah di-setup!', flags: 64 });
             } catch (error) {
                 console.error('Error setting up roles:', error);
-                await interaction.reply({ content: '❌ Error saat setup menu!', ephemeral: true });
+                await interaction.reply({ content: '❌ Error saat setup menu!', flags: 64 });
             }
         }
 
@@ -490,10 +490,10 @@ client.on('interactionCreate', async (interaction) => {
                     await channel.send({ embeds: [embed] });
                 }
 
-                await interaction.reply({ content: '✅ Embed berhasil dikirim!', ephemeral: true });
+                await interaction.reply({ content: '✅ Embed berhasil dikirim!', flags: 64 });
             } catch (error) {
                 console.error('Error sending embed:', error);
-                await interaction.reply({ content: '❌ Error saat mengirim embed!', ephemeral: true });
+                await interaction.reply({ content: '❌ Error saat mengirim embed!', flags: 64 });
             }
         }
 
@@ -520,19 +520,19 @@ client.on('interactionCreate', async (interaction) => {
                         console.error('Error fetching message to reply:', error);
                         return await interaction.reply({ 
                             content: '❌ Message ID tidak ditemukan atau sudah dihapus!', 
-                            ephemeral: true 
+                            flags: 64 
                         });
                     }
                 } else {
                     sentMessage = await interaction.channel.send(messageOptions);
                 }
 
-                await interaction.reply({ content: '✅ Message berhasil dikirim!', ephemeral: true });
+                await interaction.reply({ content: '✅ Message berhasil dikirim!', flags: 64 });
             } catch (error) {
                 console.error('Error sending message:', error);
                 await interaction.reply({ 
-                    content: `❌ Error: ${error.message}`, 
-                    ephemeral: true 
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64 
                 });
             }
         }
@@ -547,7 +547,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (member && !member.bannable) {
                     return await interaction.reply({
                         content: '❌ Cannot ban this user! (Role hierarchy issue)',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -565,12 +565,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [banEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [banEmbed], flags: 64 });
             } catch (error) {
                 console.error('Error banning user:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -585,7 +585,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (!member) {
                     return await interaction.reply({
                         content: '❌ User not found in this server!',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -593,7 +593,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (!member.kickable) {
                     return await interaction.reply({
                         content: '❌ Cannot kick this user! (Role hierarchy issue)',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -611,12 +611,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [kickEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [kickEmbed], flags: 64 });
             } catch (error) {
                 console.error('Error kicking user:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -632,7 +632,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (!banInfo) {
                     return await interaction.reply({
                         content: '❌ User is not banned on this server!',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -649,12 +649,12 @@ client.on('interactionCreate', async (interaction) => {
                     )
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [unbanEmbed], ephemeral: true });
+                await interaction.reply({ embeds: [unbanEmbed], flags: 64 });
             } catch (error) {
                 console.error('Error unbanning user:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -728,7 +728,7 @@ client.on('interactionCreate', async (interaction) => {
                 console.error('Error showing embed modal:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -793,13 +793,13 @@ client.on('interactionCreate', async (interaction) => {
                     content: '📋 Preview:',
                     embeds: [embed],
                     components: [buttonRow],
-                    ephemeral: true
+                    flags: 64
                 });
             } catch (error) {
                 console.error('Error processing embed modal:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -815,7 +815,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (!embedData) {
                     return await interaction.reply({
                         content: '❌ Embed data expired! Please create a new embed.',
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -828,13 +828,13 @@ client.on('interactionCreate', async (interaction) => {
 
                 await interaction.reply({
                     content: '✅ Embed sent successfully!',
-                    ephemeral: true
+                    flags: 64
                 });
             } catch (error) {
                 console.error('Error sending embed:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -847,13 +847,13 @@ client.on('interactionCreate', async (interaction) => {
 
                 await interaction.reply({
                     content: '❌ Embed creation cancelled.',
-                    ephemeral: true
+                    flags: 64
                 });
             } catch (error) {
                 console.error('Error cancelling embed:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
@@ -988,7 +988,7 @@ client.on('interactionCreate', async (interaction) => {
 
         const msg = await interaction.reply({ 
             embeds: [responseEmbed], 
-            ephemeral: true 
+            flags: 64 
         });
 
         // Auto-delete message setelah 5 detik
@@ -1006,7 +1006,7 @@ client.on('interactionCreate', async (interaction) => {
             
             const msg = await interaction.reply({ 
                 embeds: [errorEmbed], 
-                ephemeral: true 
+                flags: 64 
             });
 
             // Auto-delete message setelah 3 detik
