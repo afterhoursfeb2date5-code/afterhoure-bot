@@ -182,6 +182,14 @@ const commands = [
                 .setDescription('Channel to send boost messages')
                 .setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+    new SlashCommandBuilder()
+        .setName('setup-modlog')
+        .setDescription('Setup moderation log channel (Admin only)')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Channel for mod logs')
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -606,6 +614,20 @@ client.on('interactionCreate', async (interaction) => {
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [banEmbed], flags: 64 });
+
+                // Send to modlog channel
+                const modlogChannelId = client.modlogConfig?.[interaction.guildId];
+                if (modlogChannelId) {
+                    try {
+                        const modlogChannel = await interaction.guild.channels.fetch(modlogChannelId);
+                        if (modlogChannel) {
+                            const logMessage = `${user.tag} has been banned from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
+                            await modlogChannel.send(logMessage);
+                        }
+                    } catch (error) {
+                        console.error('Error sending ban log:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Error banning user:', error);
                 await interaction.reply({
@@ -652,6 +674,20 @@ client.on('interactionCreate', async (interaction) => {
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [kickEmbed], flags: 64 });
+
+                // Send to modlog channel
+                const modlogChannelId = client.modlogConfig?.[interaction.guildId];
+                if (modlogChannelId) {
+                    try {
+                        const modlogChannel = await interaction.guild.channels.fetch(modlogChannelId);
+                        if (modlogChannel) {
+                            const logMessage = `${user.tag} has been kicked from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
+                            await modlogChannel.send(logMessage);
+                        }
+                    } catch (error) {
+                        console.error('Error sending kick log:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Error kicking user:', error);
                 await interaction.reply({
@@ -690,6 +726,20 @@ client.on('interactionCreate', async (interaction) => {
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [unbanEmbed], flags: 64 });
+
+                // Send to modlog channel
+                const modlogChannelId = client.modlogConfig?.[interaction.guildId];
+                if (modlogChannelId) {
+                    try {
+                        const modlogChannel = await interaction.guild.channels.fetch(modlogChannelId);
+                        if (modlogChannel) {
+                            const logMessage = `User <@${userId}> (${userId}) has been unbanned from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
+                            await modlogChannel.send(logMessage);
+                        }
+                    } catch (error) {
+                        console.error('Error sending unban log:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Error unbanning user:', error);
                 await interaction.reply({
@@ -930,6 +980,38 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'setup-modlog') {
+            try {
+                const channel = interaction.options.getChannel('channel');
+
+                // Initialize config jika belum ada
+                if (!client.modlogConfig) {
+                    client.modlogConfig = {};
+                }
+
+                // Set modlog channel untuk guild ini
+                client.modlogConfig[interaction.guildId] = channel.id;
+
+                const setupEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Moderation Log Channel Setup')
+                    .addFields({
+                        name: 'Channel',
+                        value: `${channel}`,
+                        inline: false
+                    })
+                    .setDescription('Bot akan log semua moderation actions di channel ini')
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [setupEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error setting up modlog channel:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
 
     }
 
