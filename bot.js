@@ -2050,9 +2050,9 @@ client.on('messageCreate', async (message) => {
 
         // Handle auto-translate in international-chat channel
         try {
-            const INTERNATIONAL_CHAT_CHANNEL = '╠・🌎—international-class';
+            const INTERNATIONAL_CHAT_CHANNEL_ID = '1451535027820036127';
             
-            if (message.channel.name === INTERNATIONAL_CHAT_CHANNEL && !message.author.bot) {
+            if (message.channelId === INTERNATIONAL_CHAT_CHANNEL_ID && !message.author.bot) {
                 const messageText = message.content;
                 
                 if (messageText.trim().length === 0) return;
