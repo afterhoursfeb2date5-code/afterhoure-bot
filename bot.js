@@ -1345,6 +1345,45 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
+            // ma.list - Show all prefix commands
+            else if (command === 'list') {
+                try {
+                    const listEmbed = new EmbedBuilder()
+                        .setColor('#00D9FF')
+                        .setTitle('📋 Daftar Prefix Commands')
+                        .setDescription('Semua available prefix commands:')
+                        .addFields(
+                            { 
+                                name: 'ma.roleicon [roleID]', 
+                                value: 'Tampilkan info role (ID, member count, created date)', 
+                                inline: false 
+                            },
+                            { 
+                                name: 'ma.inrole [roleID]', 
+                                value: 'Tampilkan list members dalam role (max 10)', 
+                                inline: false 
+                            },
+                            { 
+                                name: 'ma.createrole [name] [color1] [color2]', 
+                                value: 'Buat role baru dengan gradient\nContoh: `ma.createrole VIP #FF0000 #0000FF`\nPerlu: ManageRoles permission', 
+                                inline: false 
+                            },
+                            { 
+                                name: 'ma.list', 
+                                value: 'Tampilkan list semua commands', 
+                                inline: false 
+                            }
+                        )
+                        .setFooter({ text: 'Gunakan ma.[command] untuk menjalankan command' })
+                        .setTimestamp();
+
+                    await message.reply({ embeds: [listEmbed] });
+                } catch (error) {
+                    console.error('Error executing list command:', error);
+                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
+                }
+            }
+
             return;
         }
 
