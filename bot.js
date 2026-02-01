@@ -1,5 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
+const fs = require('fs');
+const path = require('path');
 
 const client = new Client({ 
     intents: [
@@ -29,6 +31,60 @@ function parseDuration(durationStr) {
         case 'd': return amount * 24 * 60 * 60 * 1000;
         default: return null;
     }
+}
+
+// ============ STREAK SYSTEM HELPERS ============
+const streaksFile = path.join(__dirname, 'streaks.json');
+
+function loadStreaks() {
+    try {
+        if (fs.existsSync(streaksFile)) {
+            return JSON.parse(fs.readFileSync(streaksFile, 'utf8'));
+        }
+    } catch (error) {
+        console.error('Error loading streaks:', error);
+    }
+    return { streaks: {}, settings: { streakChannel: null } };
+}
+
+function saveStreaks(data) {
+    try {
+        fs.writeFileSync(streaksFile, JSON.stringify(data, null, 2));
+    } catch (error) {
+        console.error('Error saving streaks:', error);
+    }
+}
+
+function getStreakKey(userId1, userId2) {
+    // Create consistent key regardless of order
+    return [userId1, userId2].sort().join('-');
+}
+
+function getStreakData(userId1, userId2) {
+    const data = loadStreaks();
+    const key = getStreakKey(userId1, userId2);
+    return data.streaks[key] || null;
+}
+
+function checkAndResetStreak(streakData) {
+    const lastCheckin = new Date(streakData.lastCheckin).getTime();
+    const now = Date.now();
+    const diffMs = now - lastCheckin;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    // Jika lebih dari 24 jam, reset streak
+    if (diffHours > 24) {
+        return true; // Streak reset
+    }
+    return false;
+}
+
+function createStreakEmbed(user1, user2, count) {
+    return new EmbedBuilder()
+        .setColor('#FF6B6B')
+        .setDescription(`🔥 **@${user1.username} & @${user2.username}** kalian udah bareng ${count} hari nonstop! Jaga terus streak-nya! 🔥`)
+        .setImage('https://imgur.com/LLi6XfL.png')
+        .setFooter({ text: 'UNION CORP' });
 }
 
 // Register slash commands
@@ -262,6 +318,38 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    // ============ STREAK COMMANDS ============
+    new SlashCommandBuilder()
+        .setName('checkin')
+        .setDescription('Check in untuk streak kamu'),
+    new SlashCommandBuilder()
+        .setName('linkstreak')
+        .setDescription('Link streak dengan user lain')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User yang mau di-link')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('unlinkstreak')
+        .setDescription('Unlink streak dari user')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User yang mau di-unlink')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('mystreak')
+        .setDescription('Lihat streak kamu'),
+    new SlashCommandBuilder()
+        .setName('streakboard')
+        .setDescription('Lihat leaderboard streak'),
+    new SlashCommandBuilder()
+        .setName('setstreakchannel')
+        .setDescription('Set channel untuk streak notifications (Admin only)')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Channel untuk notifications')
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -1336,6 +1424,262 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [disconnectEmbed], flags: 64 });
             } catch (error) {
                 console.error('Error disconnecting from voice channel:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        // ============ STREAK COMMANDS ============
+        if (commandName === 'checkin') {
+            try {
+                const userId = interaction.user.id;
+                const data = loadStreaks();
+                let found = false;
+
+                // Cari streak yang melibatkan user ini
+                for (const key in data.streaks) {
+                    if (data.streaks[key].users.includes(userId)) {
+                        const streak = data.streaks[key];
+                        
+                        // Check jika perlu reset
+                        if (checkAndResetStreak(streak)) {
+                            streak.count = 1;
+                            streak.lastCheckin = new Date().toISOString();
+                            saveStreaks(data);
+                            
+                            return await interaction.reply({
+                                content: '❌ Streak reset! Salah satu dari kalian gak checkin lebih dari 24 jam. Mulai dari 0 lagi sekarang! 🔥',
+                                flags: 64
+                            });
+                        }
+
+                        // Increment streak
+                        streak.count++;
+                        streak.lastCheckin = new Date().toISOString();
+                        saveStreaks(data);
+
+                        // Get partner user
+                        const partnerId = streak.users.find(id => id !== userId);
+                        const partner = await interaction.client.users.fetch(partnerId).catch(() => null);
+                        const user = interaction.user;
+
+                        // Send notification to streak channel if set
+                        if (data.settings.streakChannel) {
+                            const channel = await interaction.client.channels.fetch(data.settings.streakChannel).catch(() => null);
+                            if (channel && partner) {
+                                const embed = createStreakEmbed(user, partner, streak.count);
+                                await channel.send({ content: `<@${user.id}> <@${partnerId}>`, embeds: [embed] }).catch(() => {});
+                            }
+                        }
+
+                        const replyEmbed = new EmbedBuilder()
+                            .setColor('#FF6B6B')
+                            .setTitle('🔥 Checkin Successful!')
+                            .setDescription(`Streak kamu udah **${streak.count}** hari!`)
+                            .setFooter({ text: partner ? `Dengan ${partner.username}` : 'Solo Streak' });
+
+                        found = true;
+                        return await interaction.reply({ embeds: [replyEmbed], flags: 64 });
+                    }
+                }
+
+                if (!found) {
+                    return await interaction.reply({
+                        content: '❌ Kamu belum punya streak! Gunakan `/linkstreak` dulu!',
+                        flags: 64
+                    });
+                }
+            } catch (error) {
+                console.error('Checkin error:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'linkstreak') {
+            try {
+                const user1 = interaction.user;
+                const user2 = interaction.options.getUser('user');
+
+                if (user1.id === user2.id) {
+                    return await interaction.reply({
+                        content: '❌ Kamu gak bisa link streak sama diri sendiri!',
+                        flags: 64
+                    });
+                }
+
+                const data = loadStreaks();
+                const key = getStreakKey(user1.id, user2.id);
+
+                if (data.streaks[key]) {
+                    return await interaction.reply({
+                        content: '❌ Streak sudah link sebelumnya!',
+                        flags: 64
+                    });
+                }
+
+                // Create new streak
+                data.streaks[key] = {
+                    users: [user1.id, user2.id],
+                    count: 1,
+                    lastCheckin: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                saveStreaks(data);
+
+                const embed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('🔥 Streak Linked!')
+                    .setDescription(`Streak <@${user1.id}> & <@${user2.id}> udah dimulai!\n\nMulai dari hari 1. Jangan lupa checkin setiap hari!`)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Linkstreak error:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'unlinkstreak') {
+            try {
+                const user1 = interaction.user;
+                const user2 = interaction.options.getUser('user');
+
+                const data = loadStreaks();
+                const key = getStreakKey(user1.id, user2.id);
+
+                if (!data.streaks[key]) {
+                    return await interaction.reply({
+                        content: '❌ Streak tidak ditemukan!',
+                        flags: 64
+                    });
+                }
+
+                delete data.streaks[key];
+                saveStreaks(data);
+
+                const embed = new EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('🔥 Streak Unlinked!')
+                    .setDescription(`Streak dengan <@${user2.id}> udah di-unlink!`)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Unlinkstreak error:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'mystreak') {
+            try {
+                const userId = interaction.user.id;
+                const data = loadStreaks();
+                let found = false;
+
+                for (const key in data.streaks) {
+                    if (data.streaks[key].users.includes(userId)) {
+                        const streak = data.streaks[key];
+                        const partnerId = streak.users.find(id => id !== userId);
+                        const partner = await interaction.client.users.fetch(partnerId).catch(() => null);
+                        
+                        const lastCheckinDate = new Date(streak.lastCheckin);
+                        const embed = new EmbedBuilder()
+                            .setColor('#FF6B6B')
+                            .setTitle('🔥 Your Streak')
+                            .setDescription(`**Hari:** ${streak.count}\n**Partner:** ${partner ? `<@${partnerId}>` : 'Unknown'}\n**Last Checkin:** <t:${Math.floor(lastCheckinDate.getTime() / 1000)}:R>`)
+                            .setTimestamp();
+
+                        found = true;
+                        return await interaction.reply({ embeds: [embed], flags: 64 });
+                    }
+                }
+
+                if (!found) {
+                    return await interaction.reply({
+                        content: '❌ Kamu belum punya streak!',
+                        flags: 64
+                    });
+                }
+            } catch (error) {
+                console.error('Mystreak error:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'streakboard') {
+            try {
+                const data = loadStreaks();
+                const streaks = Object.values(data.streaks).sort((a, b) => b.count - a.count).slice(0, 10);
+
+                if (streaks.length === 0) {
+                    return await interaction.reply({
+                        content: '❌ Belum ada streak!',
+                        flags: 64
+                    });
+                }
+
+                let description = '**🔥 Top Streaks:**\n\n';
+                for (let i = 0; i < streaks.length; i++) {
+                    const streak = streaks[i];
+                    const user1 = await interaction.client.users.fetch(streak.users[0]).catch(() => null);
+                    const user2 = await interaction.client.users.fetch(streak.users[1]).catch(() => null);
+                    
+                    description += `**${i + 1}.** ${user1 ? user1.username : 'Unknown'} & ${user2 ? user2.username : 'Unknown'} - **${streak.count}** hari\n`;
+                }
+
+                const embed = new EmbedBuilder()
+                    .setColor('#FF6B6B')
+                    .setTitle('🔥 Streak Leaderboard')
+                    .setDescription(description)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Streakboard error:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'setstreakchannel') {
+            try {
+                if (!interaction.memberPermissions.has(PermissionFlagsBits.Administrator)) {
+                    return await interaction.reply({
+                        content: '❌ Kamu harus admin!',
+                        flags: 64
+                    });
+                }
+
+                const channel = interaction.options.getChannel('channel');
+                const data = loadStreaks();
+                data.settings.streakChannel = channel.id;
+                saveStreaks(data);
+
+                const embed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Channel Set')
+                    .setDescription(`Streak notifications akan dikirim ke <#${channel.id}>`)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Setstreakchannel error:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
