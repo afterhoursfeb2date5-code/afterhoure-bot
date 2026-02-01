@@ -1,11 +1,12 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, joinVoiceChannel } = require('discord.js');
 
 const client = new Client({ 
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages
     ] 
 });
 
@@ -247,6 +248,32 @@ const commands = [
                 .setDescription('Reason for unmute')
                 .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+    new SlashCommandBuilder()
+        .setName('connect')
+        .setDescription('Connect bot to a voice channel')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Voice channel to connect to')
+                .addChannelTypes(ChannelType.GuildVoice)
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('disconnect')
+        .setDescription('Disconnect bot from voice channel')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('connect')
+        .setDescription('Connect bot to a voice channel')
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Voice channel to connect to')
+                .addChannelTypes(ChannelType.GuildVoice)
+                .setRequired(true))
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('disconnect')
+        .setDescription('Disconnect bot from voice channel')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -1248,6 +1275,79 @@ client.on('interactionCreate', async (interaction) => {
                 }
             } catch (error) {
                 console.error('Error muting user:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'connect') {
+            try {
+                const voiceChannel = interaction.options.getChannel('channel');
+
+                // Check if bot can connect
+                if (!voiceChannel.joinable) {
+                    return await interaction.reply({
+                        content: '❌ Bot tidak bisa join channel ini! Pastikan bot punya permission untuk join.',
+                        flags: 64
+                    });
+                }
+
+                // Connect to voice channel
+                const connection = joinVoiceChannel({
+                    channelId: voiceChannel.id,
+                    guildId: voiceChannel.guild.id,
+                    adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+                });
+
+                // Store connection reference
+                if (!client.voiceConnections) {
+                    client.voiceConnections = new Map();
+                }
+                client.voiceConnections.set(voiceChannel.guild.id, connection);
+
+                const connectEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Bot Connected')
+                    .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**!`)
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [connectEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error connecting to voice channel:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'disconnect') {
+            try {
+                const guildId = interaction.guildId;
+
+                if (!client.voiceConnections || !client.voiceConnections.has(guildId)) {
+                    return await interaction.reply({
+                        content: '❌ Bot tidak sedang connect ke voice channel apapun!',
+                        flags: 64
+                    });
+                }
+
+                // Get connection and destroy it
+                const connection = client.voiceConnections.get(guildId);
+                connection.destroy();
+                client.voiceConnections.delete(guildId);
+
+                const disconnectEmbed = new EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('✅ Bot Disconnected')
+                    .setDescription('Bot sudah disconnect dari voice channel!')
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [disconnectEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error disconnecting from voice channel:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
