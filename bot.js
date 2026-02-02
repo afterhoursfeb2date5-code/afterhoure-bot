@@ -1533,8 +1533,9 @@ client.on('interactionCreate', async (interaction) => {
                 }
 
                 const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+                const ARROW_EMOJI = '<:arrow:1468012662108455179>';
 
-                // Build top 10 text list
+                // Build top 10 text list with custom arrow
                 let topTenList = '';
                 const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
 
@@ -1549,7 +1550,7 @@ client.on('interactionCreate', async (interaction) => {
                     }
 
                     const formattedPoints = points.toLocaleString();
-                    topTenList += `${medals[i]} **${memberName}**\n┗ ➜ ${formattedPoints} Points\n`;
+                    topTenList += `${medals[i]} ${memberName}\n${ARROW_EMOJI} ${formattedPoints} Points\n`;
                 }
 
                 // Fetch member data for top 3 (for canvas image)
@@ -1570,13 +1571,9 @@ client.on('interactionCreate', async (interaction) => {
 
                 // Create main embed with top 10 list
                 const leaderboardEmbed = new EmbedBuilder()
-                    .setColor('#FFD700')
-                    .setTitle('🏆 Top 10 Active Members')
-                    .setDescription(topTenList)
-                    .addFields(
-                        { name: 'Period', value: currentMonth, inline: true },
-                        { name: 'Total Members', value: `${sorted.length}`, inline: true }
-                    )
+                    .setColor('#4169E1')
+                    .setTitle('🏆 Top Active Members Leaderboard')
+                    .setDescription(`**Period:** ${currentMonth}\n\n${topTenList}`)
                     .setFooter({ text: 'Congratulations to the Top Active Members! 🎉' })
                     .setTimestamp();
 
