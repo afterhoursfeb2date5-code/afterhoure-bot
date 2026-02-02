@@ -1,8 +1,9 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { createCanvas, loadImage, registerFont } = require('canvas');
 require('dotenv').config();
 
 const client = new Client({ 
@@ -374,6 +375,100 @@ async function sendLog(guild, title, description, color = '#FF9900') {
         });
     } catch (error) {
         console.error('Error in sendLog:', error);
+    }
+}
+
+// Generate leaderboard image with top 3 members
+async function generateLeaderboardImage(topMembers, month) {
+    try {
+        const canvas = createCanvas(1200, 700);
+        const ctx = canvas.getContext('2d');
+
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 1200, 700);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(1, '#16213e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 1200, 700);
+
+        // Title
+        ctx.font = 'bold 60px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText('TOP ACTIVE MEMBERS', 600, 80);
+
+        // Period
+        ctx.font = '32px Arial';
+        ctx.fillStyle = '#b0b0b0';
+        ctx.fillText(month, 600, 130);
+
+        // Draw top 3 members
+        const positions = [
+            { x: 600, y: 300, medal: '1', color: '#FFD700', size: 200 }, // 1st - center, gold
+            { x: 250, y: 400, medal: '2', color: '#C0C0C0', size: 140 }, // 2nd - left, silver
+            { x: 950, y: 400, medal: '3', color: '#CD7F32', size: 140 }  // 3rd - right, bronze
+        ];
+
+        for (let i = 0; i < Math.min(3, topMembers.length); i++) {
+            const { userId, points, member } = topMembers[i];
+            const pos = positions[i];
+
+            try {
+                // Get avatar URL
+                let avatarUrl = member?.user?.displayAvatarURL({ extension: 'png', size: 256 }) || 
+                               `https://cdn.discordapp.com/embed/avatars/0.png`;
+                
+                // Load and draw circular avatar
+                const avatar = await loadImage(avatarUrl);
+                
+                // Draw circle background for avatar
+                ctx.fillStyle = pos.color;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y - 30, pos.size / 2 + 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw avatar image (circular)
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y - 30, pos.size / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(avatar, pos.x - pos.size / 2, pos.y - 30 - pos.size / 2, pos.size, pos.size);
+                ctx.restore();
+
+                // Draw medal number
+                const medalSize = pos.size / 3;
+                ctx.font = `bold ${medalSize}px Arial`;
+                ctx.fillStyle = pos.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(pos.medal, pos.x, pos.y - 30 + pos.size / 2 + medalSize / 2);
+
+                // Draw username
+                const username = member?.user?.username || 'Unknown';
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.fillText(username, pos.x, pos.y + pos.size / 2 + 50);
+
+                // Draw points
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = pos.color;
+                const formattedPoints = points.toLocaleString();
+                ctx.fillText(`${formattedPoints} Points`, pos.x, pos.y + pos.size / 2 + 80);
+            } catch (error) {
+                console.error(`Error drawing member ${i}:`, error);
+            }
+        }
+
+        // Footer text
+        ctx.font = '18px Arial';
+        ctx.fillStyle = '#888888';
+        ctx.textAlign = 'center';
+        ctx.fillText('Congratulations to the Top Active Members! 🎉', 600, 650);
+
+        return canvas.toBuffer('image/png');
+    } catch (error) {
+        console.error('Error generating leaderboard image:', error);
+        return null;
     }
 }
 
@@ -1423,33 +1518,52 @@ client.on('interactionCreate', async (interaction) => {
 
         if (commandName === 'leaderboard') {
             try {
+                await interaction.deferReply();
+
                 const pointsData = client.userPoints;
                 const users = pointsData.users || {};
 
                 // Convert to array and sort by points descending
                 const sorted = Object.entries(users)
                     .map(([userId, points]) => ({ userId, points }))
-                    .sort((a, b) => b.points - a.points)
-                    .slice(0, 10);
+                    .sort((a, b) => b.points - a.points);
 
                 if (sorted.length === 0) {
-                    return await interaction.reply({
+                    return await interaction.editReply({
                         content: '❌ Belum ada data leaderboard!',
-                        flags: 64
                     });
                 }
 
-                // Create leaderboard description
                 const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-                let description = '';
 
-                for (let i = 0; i < sorted.length; i++) {
+                // Fetch member data for top 3
+                const topMembers = [];
+                for (let i = 0; i < Math.min(3, sorted.length); i++) {
                     const { userId, points } = sorted[i];
-                    let medal = '';
-                    if (i === 0) medal = '🥇';
-                    else if (i === 1) medal = '🥈';
-                    else if (i === 2) medal = '🥉';
-                    else medal = `${i + 1}️⃣`;
+                    try {
+                        const member = await interaction.guild.members.fetch(userId);
+                        topMembers.push({ userId, points, member });
+                    } catch (e) {
+                        topMembers.push({ userId, points, member: null });
+                    }
+                }
+
+                // Generate image
+                const imageBuffer = await generateLeaderboardImage(topMembers, currentMonth);
+                if (!imageBuffer) {
+                    return await interaction.editReply({
+                        content: '❌ Error generating leaderboard image!',
+                    });
+                }
+
+                // Create attachment
+                const attachment = new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' });
+
+                // Create embed with remaining top members (4-10)
+                let description = '';
+                for (let i = 3; i < Math.min(10, sorted.length); i++) {
+                    const { userId, points } = sorted[i];
+                    const medal = `${i + 1}️⃣`;
 
                     let memberName = 'Unknown User';
                     try {
@@ -1465,17 +1579,20 @@ client.on('interactionCreate', async (interaction) => {
 
                 const leaderboardEmbed = new EmbedBuilder()
                     .setColor('#FFD700')
-                    .setTitle('Top Active Members Leaderboard')
-                    .setDescription(`Period: ${currentMonth}\n\n${description}`)
-                    .setFooter({ text: 'Congratulations to the Top Active Members! 🎉' })
+                    .setTitle('Top 10 Active Members')
+                    .setImage('attachment://leaderboard.png')
+                    .setDescription(description || 'Only 3 members in ranking')
+                    .setFooter({ text: `Period: ${currentMonth}` })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [leaderboardEmbed] });
+                await interaction.editReply({ 
+                    embeds: [leaderboardEmbed],
+                    files: [attachment]
+                });
             } catch (error) {
                 console.error('Error fetching leaderboard:', error);
-                await interaction.reply({
+                await interaction.editReply({
                     content: `❌ Error: ${error.message}`,
-                    flags: 64
                 });
             }
         }
