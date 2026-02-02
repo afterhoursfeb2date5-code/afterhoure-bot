@@ -1,6 +1,8 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const client = new Client({ 
@@ -15,6 +17,58 @@ const client = new Client({
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+
+// Config file paths
+const CONFIG_DIR = path.join(__dirname, 'config');
+const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
+const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
+
+// Ensure config directory exists
+if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+}
+
+// Load configs
+function loadBoosterConfig() {
+    try {
+        if (fs.existsSync(BOOSTER_CONFIG_FILE)) {
+            return JSON.parse(fs.readFileSync(BOOSTER_CONFIG_FILE, 'utf8'));
+        }
+    } catch (error) {
+        console.error('Error loading booster config:', error);
+    }
+    return {};
+}
+
+function loadLogsConfig() {
+    try {
+        if (fs.existsSync(LOGS_CONFIG_FILE)) {
+            return JSON.parse(fs.readFileSync(LOGS_CONFIG_FILE, 'utf8'));
+        }
+    } catch (error) {
+        console.error('Error loading logs config:', error);
+    }
+    return {};
+}
+
+function saveBoosterConfig(config) {
+    try {
+        fs.writeFileSync(BOOSTER_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving booster config:', error);
+    }
+}
+
+function saveLogsConfig(config) {
+    try {
+        fs.writeFileSync(LOGS_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving logs config:', error);
+    }
+}
+
+client.boosterConfig = loadBoosterConfig();
+client.logsConfig = loadLogsConfig();
 
 // Helper function untuk parse duration (e.g., "1h", "30m", "7d")
 function parseDuration(durationStr) {
@@ -266,6 +320,29 @@ const commands = [
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 ].map(command => command.toJSON());
 
+// Helper function to send logs
+async function sendLog(guild, title, description, color = '#FF9900') {
+    try {
+        const logsChannelId = client.logsConfig?.[guild.id];
+        if (!logsChannelId) return; // No logs channel configured
+        
+        const logsChannel = guild.channels.cache.get(logsChannelId);
+        if (!logsChannel) return;
+        
+        const logEmbed = new EmbedBuilder()
+            .setColor(color)
+            .setTitle(title)
+            .setDescription(description)
+            .setTimestamp();
+        
+        await logsChannel.send({ embeds: [logEmbed] }).catch(err => {
+            console.error('Error sending log:', err);
+        });
+    } catch (error) {
+        console.error('Error in sendLog:', error);
+    }
+}
+
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 (async () => {
@@ -284,6 +361,11 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
 client.once('clientReady', () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
+    
+    // Load configs from file
+    client.boosterConfig = loadBoosterConfig();
+    client.logsConfig = loadLogsConfig();
+    console.log('📁 Configs loaded from file');
     
     // Set rotating presence
     const activities = [
@@ -650,6 +732,14 @@ client.on('interactionCreate', async (interaction) => {
                 }
 
                 await interaction.reply({ content: '✅ Message berhasil dikirim!', flags: 64 });
+
+                // Log the admin action
+                await sendLog(
+                    interaction.guild,
+                    '📢 Admin Message Sent',
+                    `**Author:** ${interaction.user.tag}\n**Channel:** ${interaction.channel.name}\n**Message:** ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`,
+                    '#0099FF'
+                );
             } catch (error) {
                 console.error('Error sending message:', error);
                 await interaction.reply({ 
@@ -690,18 +780,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [banEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `${user.tag} has been banned from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending ban log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '⛔ User Banned',
+                    `**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}\n**Banned by:** ${interaction.user.tag}`,
+                    '#FF0000'
+                );
             } catch (error) {
                 console.error('Error banning user:', error);
                 await interaction.reply({
@@ -750,18 +834,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [kickEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `${user.tag} has been kicked from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending kick log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '👢 User Kicked',
+                    `**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}\n**Kicked by:** ${interaction.user.tag}`,
+                    '#FF6600'
+                );
             } catch (error) {
                 console.error('Error kicking user:', error);
                 await interaction.reply({
@@ -802,18 +880,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [unbanEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `User <@${userId}> (${userId}) has been unbanned from ${interaction.guild.name}!${reason !== 'No reason provided' ? `\nReason: ${reason}` : ''}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending unban log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '✅ User Unbanned',
+                    `**User ID:** ${userId}\n**Reason:** ${reason}\n**Unbanned by:** ${interaction.user.tag}`,
+                    '#00FF00'
+                );
             } catch (error) {
                 console.error('Error unbanning user:', error);
                 await interaction.reply({
@@ -1022,16 +1094,14 @@ client.on('interactionCreate', async (interaction) => {
             try {
                 const channel = interaction.options.getChannel('channel');
 
-                // Initialize config jika belum ada
-                if (!client.boosterConfig) {
-                    client.boosterConfig = {};
-                }
-
                 // Set booster channel untuk guild ini
                 client.boosterConfig[interaction.guildId] = {
                     ...client.boosterConfig[interaction.guildId],
                     channelId: channel.id
                 };
+                
+                // Save to file
+                saveBoosterConfig(client.boosterConfig);
 
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
@@ -1058,13 +1128,11 @@ client.on('interactionCreate', async (interaction) => {
             try {
                 const channel = interaction.options.getChannel('channel');
 
-                // Initialize config jika belum ada
-                if (!client.logsConfig) {
-                    client.logsConfig = {};
-                }
-
                 // Set logs channel untuk guild ini
                 client.logsConfig[interaction.guildId] = channel.id;
+                
+                // Save to file
+                saveLogsConfig(client.logsConfig);
 
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
@@ -1137,18 +1205,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [timeoutEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `${user.tag} has been timed out for ${duration} from ${interaction.guild.name}!\nReason: ${reason}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending timeout log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '⏱️ User Timed Out',
+                    `**User:** ${user.tag} (${user.id})\n**Duration:** ${duration}\n**Reason:** ${reason}\n**Timed out by:** ${interaction.user.tag}`,
+                    '#FFAA00'
+                );
             } catch (error) {
                 console.error('Error timing out user:', error);
                 await interaction.reply({
@@ -1197,18 +1259,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [unmuteEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `${user.tag} has been unmuted from ${interaction.guild.name}!\nReason: ${reason}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending unmute log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '✅ User Unmuted',
+                    `**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}\n**Unmuted by:** ${interaction.user.tag}`,
+                    '#00FF00'
+                );
             } catch (error) {
                 console.error('Error unmuting user:', error);
                 await interaction.reply({
@@ -1251,18 +1307,12 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [muteEmbed], flags: 64 });
 
                 // Send to logs channel
-                const logsChannelId = client.logsConfig?.[interaction.guildId];
-                if (logsChannelId) {
-                    try {
-                        const logsChannel = await interaction.guild.channels.fetch(logsChannelId);
-                        if (logsChannel) {
-                            const logMessage = `${user.tag} has been muted (permanent) from ${interaction.guild.name}!\nReason: ${reason}`;
-                            await logsChannel.send(logMessage);
-                        }
-                    } catch (error) {
-                        console.error('Error sending mute log:', error);
-                    }
-                }
+                await sendLog(
+                    interaction.guild,
+                    '🔇 User Muted (Permanent)',
+                    `**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}\n**Muted by:** ${interaction.user.tag}\n**Type:** Permanent (until unmuted)`,
+                    '#FF00FF'
+                );
             } catch (error) {
                 console.error('Error muting user:', error);
                 await interaction.reply({
@@ -1448,6 +1498,14 @@ client.on('interactionCreate', async (interaction) => {
                     content: '✅ Embed sent successfully!',
                     flags: 64
                 });
+
+                // Log the embed creation
+                await sendLog(
+                    interaction.guild,
+                    '📊 Embed Created & Sent',
+                    `**Author:** ${interaction.user.tag}\n**Channel:** ${interaction.channel.name}\n**Title:** ${embedData.embed.data.title || 'No title'}`,
+                    '#9900FF'
+                );
             } catch (error) {
                 console.error('Error sending embed:', error);
                 await interaction.reply({
