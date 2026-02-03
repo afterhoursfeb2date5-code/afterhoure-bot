@@ -69,38 +69,6 @@ function saveLogsConfig(config) {
 }
 
 // User points config
-const POINTS_CONFIG_FILE = path.join(CONFIG_DIR, 'user-points.json');
-const LEADERBOARD_CHANNEL_ID = '1432680380103786581';
-
-function loadUserPoints() {
-    try {
-        if (fs.existsSync(POINTS_CONFIG_FILE)) {
-            const data = JSON.parse(fs.readFileSync(POINTS_CONFIG_FILE, 'utf8'));
-            // Check if month changed, reset if needed
-            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-            if (data.month !== currentMonth) {
-                console.log('📊 Monthly reset: clearing user points');
-                return { month: currentMonth, users: {} };
-            }
-            return data;
-        }
-    } catch (error) {
-        console.error('Error loading user points:', error);
-    }
-    return { month: new Date().toISOString().slice(0, 7), users: {} };
-}
-
-function saveUserPoints(data) {
-    try {
-        fs.writeFileSync(POINTS_CONFIG_FILE, JSON.stringify(data, null, 2), 'utf8');
-    } catch (error) {
-        console.error('Error saving user points:', error);
-    }
-}
-
-client.boosterConfig = loadBoosterConfig();
-client.logsConfig = loadLogsConfig();
-client.userPoints = loadUserPoints();
 
 // Helper function untuk parse duration (e.g., "1h", "30m", "7d")
 function parseDuration(durationStr) {
@@ -350,9 +318,6 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-    new SlashCommandBuilder()
-        .setName('leaderboard')
-        .setDescription('Display top 10 active members with points'),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -378,97 +343,6 @@ async function sendLog(guild, title, description, color = '#FF9900') {
     }
 }
 
-// Generate leaderboard image with top 3 members
-async function generateLeaderboardImage(topMembers, month) {
-    try {
-        const canvas = createCanvas(1200, 500);
-        const ctx = canvas.getContext('2d');
-
-        // Background gradient (darker)
-        const gradient = ctx.createLinearGradient(0, 0, 1200, 500);
-        gradient.addColorStop(0, '#0f0f1e');
-        gradient.addColorStop(1, '#1a1a2e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 1200, 500);
-
-        // Title
-        ctx.font = 'bold 48px Arial';
-        ctx.fillStyle = '#FFD700';
-        ctx.textAlign = 'center';
-        ctx.fillText('TOP ACTIVE MEMBERS', 600, 60);
-
-        // Period text
-        ctx.font = '24px Arial';
-        ctx.fillStyle = '#b0b0b0';
-        ctx.fillText(month, 600, 95);
-
-        // Draw top 3 members in a horizontal row
-        const positions = [
-            { x: 300, y: 280, medal: '🥇', size: 120, medalSize: 45 }, // 1st - left (silver)
-            { x: 600, y: 220, medal: '🥇', size: 140, medalSize: 50 }, // 1st - center (gold, biggest)
-            { x: 900, y: 280, medal: '🥉', size: 120, medalSize: 45 }  // 3rd - right (bronze)
-        ];
-
-        for (let i = 0; i < Math.min(3, topMembers.length); i++) {
-            const { userId, points, member } = topMembers[i];
-            const pos = positions[i];
-
-            try {
-                // Get avatar URL
-                let avatarUrl = member?.user?.displayAvatarURL({ extension: 'png', size: 256 }) || 
-                               `https://cdn.discordapp.com/embed/avatars/0.png`;
-                
-                // Load and draw circular avatar
-                const avatar = await loadImage(avatarUrl);
-                
-                // Draw medal emoji at top
-                ctx.font = `${pos.medalSize}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.fillText(pos.medal, pos.x, pos.y - 90);
-
-                // Draw avatar circle with border
-                ctx.fillStyle = '#FFD700';
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, pos.size / 2 + 5, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw avatar image (circular)
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, pos.size / 2, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(avatar, pos.x - pos.size / 2, pos.y - pos.size / 2, pos.size, pos.size);
-                ctx.restore();
-
-                // Draw rank number below avatar
-                ctx.font = 'bold 32px Arial';
-                ctx.fillStyle = '#FFD700';
-                ctx.textAlign = 'center';
-                ctx.fillText(`#${i + 1}`, pos.x, pos.y + pos.size / 2 + 45);
-
-                // Draw username
-                const username = member?.user?.username || 'Unknown';
-                ctx.font = '18px Arial';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.fillText(username.substring(0, 15), pos.x, pos.y + pos.size / 2 + 75);
-
-                // Draw points
-                ctx.font = 'bold 20px Arial';
-                ctx.fillStyle = '#FFD700';
-                const formattedPoints = points.toLocaleString();
-                ctx.fillText(`${formattedPoints} pts`, pos.x, pos.y + pos.size / 2 + 105);
-            } catch (error) {
-                console.error(`Error drawing member ${i}:`, error);
-            }
-        }
-
-        return canvas.toBuffer('image/png');
-    } catch (error) {
-        console.error('Error generating leaderboard image:', error);
-        return null;
-    }
-}
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
@@ -1514,88 +1388,6 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        if (commandName === 'leaderboard') {
-            try {
-                await interaction.deferReply();
-
-                const pointsData = client.userPoints;
-                const users = pointsData.users || {};
-
-                // Convert to array and sort by points descending
-                const sorted = Object.entries(users)
-                    .map(([userId, points]) => ({ userId, points }))
-                    .sort((a, b) => b.points - a.points);
-
-                if (sorted.length === 0) {
-                    return await interaction.editReply({
-                        content: '❌ Belum ada data leaderboard!',
-                    });
-                }
-
-                const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
-                const ARROW_EMOJI = '<:arrow:1468012662108455179>';
-
-                // Build top 10 text list with custom arrow
-                let topTenList = '';
-                const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
-
-                for (let i = 0; i < Math.min(10, sorted.length); i++) {
-                    const { userId, points } = sorted[i];
-                    let memberName = 'Unknown User';
-                    try {
-                        const member = await interaction.guild.members.fetch(userId);
-                        memberName = member.user.username;
-                    } catch (e) {
-                        memberName = `<@${userId}>`;
-                    }
-
-                    const formattedPoints = points.toLocaleString();
-                    topTenList += `${medals[i]} ${memberName}\n${ARROW_EMOJI} ${formattedPoints} Points\n`;
-                }
-
-                // Fetch member data for top 3 (for canvas image)
-                const topMembers = [];
-                for (let i = 0; i < Math.min(3, sorted.length); i++) {
-                    const { userId, points } = sorted[i];
-                    try {
-                        const member = await interaction.guild.members.fetch(userId);
-                        topMembers.push({ userId, points, member });
-                    } catch (e) {
-                        topMembers.push({ userId, points, member: null });
-                    }
-                }
-
-                // Generate image for top 3
-                const imageBuffer = await generateLeaderboardImage(topMembers, currentMonth);
-                const attachment = imageBuffer ? new AttachmentBuilder(imageBuffer, { name: 'leaderboard.png' }) : null;
-
-                // Create main embed with top 10 list
-                const leaderboardEmbed = new EmbedBuilder()
-                    .setColor('#4169E1')
-                    .setTitle('🏆 Top Active Members Leaderboard')
-                    .setDescription(`**Period:** ${currentMonth}\n\n${topTenList}`)
-                    .setFooter({ text: 'Congratulations to the Top Active Members! 🎉' })
-                    .setTimestamp();
-
-                // Add image if available
-                if (attachment) {
-                    leaderboardEmbed.setImage('attachment://leaderboard.png');
-                    await interaction.editReply({ 
-                        embeds: [leaderboardEmbed],
-                        files: [attachment]
-                    });
-                } else {
-                    await interaction.editReply({ 
-                        embeds: [leaderboardEmbed]
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching leaderboard:', error);
-                await interaction.editReply({
-                    content: `❌ Error: ${error.message}`,
-                });
-            }
-        }
 
     }
 
@@ -1897,26 +1689,6 @@ client.on('messageCreate', async (message) => {
     // Ignore DMs
     if (!message.guild) return;
 
-    // Track XP for leaderboard (only in kelas-umum channel)
-    if (message.channelId === LEADERBOARD_CHANNEL_ID) {
-        try {
-            const pointsData = client.userPoints;
-            const userId = message.author.id;
-            
-            // Random XP between 1-5
-            const xpGain = Math.floor(Math.random() * 5) + 1;
-            
-            if (!pointsData.users[userId]) {
-                pointsData.users[userId] = 0;
-            }
-            pointsData.users[userId] += xpGain;
-            
-            // Save to file
-            saveUserPoints(pointsData);
-        } catch (error) {
-            console.error('Error tracking XP:', error);
-        }
-    }
 
     try {
         // Handle prefix commands
