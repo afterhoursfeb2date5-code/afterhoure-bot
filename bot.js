@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
-const { joinVoiceChannel } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
+const ytdl = require('ytdl-core');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -18,6 +19,91 @@ const client = new Client({
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
+
+// Music Manager
+const musicManager = {
+    queues: new Map(), // guildId -> {songs: [], playing: bool, player: AudioPlayer, connection: VoiceConnection}
+    
+    getQueue(guildId) {
+        if (!this.queues.has(guildId)) {
+            this.queues.set(guildId, { songs: [], playing: false, player: null, connection: null });
+        }
+        return this.queues.get(guildId);
+    },
+    
+    async searchSpotify(query) {
+        try {
+            if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) return null;
+            
+            // Get Spotify access token
+            const auth = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
+            const tokenResponse = await axios.post('https://accounts.spotify.com/api/token', 
+                'grant_type=client_credentials',
+                { headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            
+            const accessToken = tokenResponse.data.access_token;
+            
+            // Search track
+            const searchResponse = await axios.get('https://api.spotify.com/v1/search', {
+                params: { q: query, type: 'track', limit: 1 },
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            
+            if (searchResponse.data.tracks.items.length === 0) return null;
+            
+            const track = searchResponse.data.tracks.items[0];
+            return {
+                title: `${track.name} - ${track.artists[0].name}`,
+                artist: track.artists[0].name,
+                url: track.external_urls.spotify,
+                thumbnail: track.album.images[0]?.url
+            };
+        } catch (error) {
+            console.error('Spotify search error:', error.message);
+            return null;
+        }
+    },
+    
+    async getYouTubeInfo(query) {
+        try {
+            // Check if query is direct YouTube URL
+            if (query.includes('youtube.com') || query.includes('youtu.be')) {
+                const info = await ytdl.getInfo(query);
+                return {
+                    title: info.videoDetails.title,
+                    url: query,
+                    thumbnail: info.videoDetails.thumbnail.thumbnails[0].url,
+                    duration: parseInt(info.videoDetails.lengthSeconds),
+                    artist: info.videoDetails.author.name
+                };
+            }
+            
+            // Search YouTube
+            const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
+            const videoIdMatch = response.data.match(/\\"\\"\\"\""\/watch\\?v=([a-zA-Z0-9_-]{11})/);
+            
+            if (!videoIdMatch) return null;
+            
+            const videoId = videoIdMatch[1];
+            const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+            const info = await ytdl.getInfo(videoUrl);
+            
+            return {
+                title: info.videoDetails.title,
+                url: videoUrl,
+                thumbnail: info.videoDetails.thumbnail.thumbnails[0].url,
+                duration: parseInt(info.videoDetails.lengthSeconds),
+                artist: info.videoDetails.author.name
+            };
+        } catch (error) {
+            console.error('YouTube search error:', error.message);
+            return null;
+        }
+    }
+};
 
 // Config file paths
 const CONFIG_DIR = path.join(__dirname, 'config');
@@ -318,6 +404,32 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Play music from YouTube or Spotify')
+        .addStringOption(option =>
+            option.setName('query')
+                .setDescription('YouTube URL, Spotify track URL, or song name')
+                .setRequired(true)),
+    new SlashCommandBuilder()
+        .setName('stop')
+        .setDescription('Stop music playback')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('skip')
+        .setDescription('Skip to next song')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('queue')
+        .setDescription('Show music queue'),
+    new SlashCommandBuilder()
+        .setName('pause')
+        .setDescription('Pause music')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('resume')
+        .setDescription('Resume music')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -358,6 +470,62 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
         console.error('❌ Error registering commands:', error);
     }
 })();
+
+// Helper function to play next song
+async function playNextSong(guildId, interaction) {
+    const queue = musicManager.getQueue(guildId);
+    
+    if (!queue.connection || queue.songs.length === 0) {
+        queue.playing = false;
+        return;
+    }
+
+    queue.playing = true;
+    const track = queue.songs[0];
+
+    try {
+        const stream = ytdl(track.url, {
+            quality: 'highestaudio',
+            filter: 'audioonly'
+        });
+
+        const resource = createAudioResource(stream);
+        queue.player.play(resource);
+
+        // Listen for track end
+        queue.player.once(AudioPlayerStatus.Idle, async () => {
+            queue.songs.shift();
+            if (queue.songs.length > 0) {
+                await playNextSong(guildId, null);
+            } else {
+                queue.playing = false;
+            }
+        });
+
+        if (interaction) {
+            const playEmbed = new EmbedBuilder()
+                .setColor('#1DB954')
+                .setTitle('🎵 Now Playing')
+                .setDescription(`**${track.title}**`)
+                .setThumbnail(track.thumbnail)
+                .addFields(
+                    { name: 'Artist', value: track.artist, inline: true },
+                    { name: 'Queue', value: `${queue.songs.length - 1} songs remaining`, inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [playEmbed] }).catch(() => {});
+        }
+    } catch (error) {
+        console.error('Error playing track:', error);
+        queue.songs.shift();
+        if (queue.songs.length > 0) {
+            await playNextSong(guildId, null);
+        } else {
+            queue.playing = false;
+        }
+    }
+}
 
 client.once('clientReady', () => {
     console.log(`✅ ${client.user.tag} udah online!`);
@@ -1388,6 +1556,241 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'play') {
+            try {
+                await interaction.deferReply();
+                const query = interaction.options.getString('query');
+                const member = interaction.member;
+                const guildId = interaction.guildId;
+
+                // Check if user is in voice channel
+                if (!member.voice.channel) {
+                    return await interaction.editReply({
+                        content: '❌ Kamu harus join voice channel dulu!',
+                    });
+                }
+
+                const voiceChannel = member.voice.channel;
+                let trackInfo = null;
+
+                // Try YouTube first, then Spotify
+                if (query.includes('spotify')) {
+                    trackInfo = await musicManager.searchSpotify(query);
+                    if (!trackInfo) {
+                        trackInfo = await musicManager.getYouTubeInfo(query);
+                    }
+                } else {
+                    trackInfo = await musicManager.getYouTubeInfo(query);
+                    if (!trackInfo) {
+                        trackInfo = await musicManager.searchSpotify(query);
+                    }
+                }
+
+                if (!trackInfo) {
+                    return await interaction.editReply({
+                        content: '❌ Tidak bisa menemukan lagu! Coba query lain.',
+                    });
+                }
+
+                const queue = musicManager.getQueue(guildId);
+                queue.songs.push(trackInfo);
+
+                const addEmbed = new EmbedBuilder()
+                    .setColor('#1DB954')
+                    .setTitle('✅ Lagu Ditambahkan ke Queue')
+                    .setDescription(`**${trackInfo.title}**`)
+                    .setThumbnail(trackInfo.thumbnail)
+                    .addFields(
+                        { name: 'Artist', value: trackInfo.artist, inline: true },
+                        { name: 'Queue Position', value: `#${queue.songs.length}`, inline: true }
+                    )
+                    .setTimestamp();
+
+                if (!queue.connection) {
+                    // Connect to voice channel
+                    const connection = joinVoiceChannel({
+                        channelId: voiceChannel.id,
+                        guildId: voiceChannel.guild.id,
+                        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+                    });
+
+                    queue.connection = connection;
+
+                    // Create player
+                    const player = createAudioPlayer();
+                    queue.player = player;
+
+                    connection.subscribe(player);
+
+                    // Play first song
+                    await playNextSong(guildId, interaction);
+                } else if (!queue.playing && queue.songs.length > 0) {
+                    await playNextSong(guildId, interaction);
+                }
+
+                await interaction.editReply({ embeds: [addEmbed] });
+            } catch (error) {
+                console.error('Error in play command:', error);
+                await interaction.editReply({
+                    content: `❌ Error: ${error.message}`,
+                });
+            }
+        }
+
+        if (commandName === 'stop') {
+            try {
+                const guildId = interaction.guildId;
+                const queue = musicManager.getQueue(guildId);
+
+                if (!queue.connection) {
+                    return await interaction.reply({
+                        content: '❌ Bot tidak sedang play musik!',
+                        flags: 64
+                    });
+                }
+
+                queue.songs = [];
+                queue.playing = false;
+                if (queue.player) queue.player.stop();
+                queue.connection.destroy();
+                queue.connection = null;
+                queue.player = null;
+
+                await interaction.reply({
+                    content: '⏹️ Music stopped!',
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error in stop command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'skip') {
+            try {
+                const guildId = interaction.guildId;
+                const queue = musicManager.getQueue(guildId);
+
+                if (!queue.connection || queue.songs.length === 0) {
+                    return await interaction.reply({
+                        content: '❌ Tidak ada lagu untuk di-skip!',
+                        flags: 64
+                    });
+                }
+
+                const skipped = queue.songs.shift();
+                await interaction.reply({
+                    content: `⏭️ Skipped: **${skipped.title}**`,
+                    flags: 64
+                });
+
+                if (queue.songs.length > 0) {
+                    await playNextSong(guildId, null);
+                } else {
+                    queue.playing = false;
+                    if (queue.player) queue.player.stop();
+                }
+            } catch (error) {
+                console.error('Error in skip command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'queue') {
+            try {
+                const guildId = interaction.guildId;
+                const queue = musicManager.getQueue(guildId);
+
+                if (queue.songs.length === 0) {
+                    return await interaction.reply({
+                        content: '❌ Queue kosong!',
+                        flags: 64
+                    });
+                }
+
+                let queueList = '';
+                for (let i = 0; i < Math.min(10, queue.songs.length); i++) {
+                    queueList += `${i + 1}. **${queue.songs[i].title}**\n`;
+                }
+
+                if (queue.songs.length > 10) {
+                    queueList += `\n... dan ${queue.songs.length - 10} lagu lainnya`;
+                }
+
+                const queueEmbed = new EmbedBuilder()
+                    .setColor('#1DB954')
+                    .setTitle('🎵 Music Queue')
+                    .setDescription(queueList)
+                    .setFooter({ text: `Total: ${queue.songs.length} songs` })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [queueEmbed] });
+            } catch (error) {
+                console.error('Error in queue command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'pause') {
+            try {
+                const guildId = interaction.guildId;
+                const queue = musicManager.getQueue(guildId);
+
+                if (!queue.player) {
+                    return await interaction.reply({
+                        content: '❌ Bot tidak sedang play musik!',
+                        flags: 64
+                    });
+                }
+
+                queue.player.pause();
+                await interaction.reply({
+                    content: '⏸️ Music paused!',
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error in pause command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'resume') {
+            try {
+                const guildId = interaction.guildId;
+                const queue = musicManager.getQueue(guildId);
+
+                if (!queue.player) {
+                    return await interaction.reply({
+                        content: '❌ Bot tidak sedang play musik!',
+                        flags: 64
+                    });
+                }
+
+                queue.player.unpause();
+                await interaction.reply({
+                    content: '▶️ Music resumed!',
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error in resume command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
 
     }
 
