@@ -1811,27 +1811,44 @@ client.on('interactionCreate', async (interaction) => {
                 // Load settings
                 const settings = loadGiveawaySettings();
                 const guildSettings = settings[interaction.guildId] || {
-                    color: '#FF00FF',
-                    emoji: '🎉'
+                    color: '#FF00FF'
                 };
 
-                // Create embed
+                const endsAt = Math.floor((Date.now() + durationMs) / 1000);
+
+                // Create simple embed like UBest Giveaway
                 const giveawayEmbed = new EmbedBuilder()
                     .setColor(guildSettings.color)
-                    .setTitle('🎁 GIVEAWAY')
-                    .setDescription(`React with ${guildSettings.emoji} to enter!\n\n**Prize:** ${prize}\n**Ends:** <t:${Math.floor((Date.now() + durationMs) / 1000)}:R>`)
+                    .setTitle(`🎁 ${prize}`)
                     .addFields(
-                        { name: 'Winners', value: `${winners}`, inline: true },
-                        { name: 'Participants', value: '0', inline: true }
+                        { name: '🏆 Pemenang', value: `${winners}`, inline: true },
+                        { name: '👥 Participants', value: '0', inline: true },
+                        { name: '⏰ Berakhir pada', value: `<t:${endsAt}:R>`, inline: false }
                     )
-                    .setFooter({ text: `Giveaway ID: ${giveawayId}` })
-                    .setTimestamp();
+                    .setFooter({ text: `ID: ${giveawayId}` });
+
+                // Create buttons
+                const buttons = new ActionRowBuilder()
+                    .addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`giveaway_join-${giveawayId}`)
+                            .setLabel('Join')
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
+                            .setCustomId(`giveaway_leave-${giveawayId}`)
+                            .setLabel('Leave')
+                            .setStyle(ButtonStyle.Danger),
+                        new ButtonBuilder()
+                            .setCustomId(`giveaway_participants-${giveawayId}`)
+                            .setLabel('👥 Participants')
+                            .setStyle(ButtonStyle.Secondary)
+                    );
 
                 // Send giveaway message
-                const giveawayMsg = await interaction.channel.send({ embeds: [giveawayEmbed] });
-                
-                // Add reaction
-                await giveawayMsg.react(guildSettings.emoji);
+                const giveawayMsg = await interaction.channel.send({ 
+                    embeds: [giveawayEmbed],
+                    components: [buttons]
+                });
 
                 // Load giveaway config
                 const giveaways = loadGiveawayConfig();
@@ -1847,8 +1864,7 @@ client.on('interactionCreate', async (interaction) => {
                     endsAt: Date.now() + durationMs,
                     participants: [],
                     ended: false,
-                    color: guildSettings.color,
-                    emoji: guildSettings.emoji
+                    color: guildSettings.color
                 };
 
                 saveGiveawayConfig(giveaways);
@@ -2044,8 +2060,7 @@ client.on('interactionCreate', async (interaction) => {
                 const subcommand = interaction.options.getSubcommand();
                 const settings = loadGiveawaySettings();
                 const guildSettings = settings[interaction.guildId] || {
-                    color: '#FF00FF',
-                    emoji: '🎉'
+                    color: '#FF00FF'
                 };
 
                 if (subcommand === 'show') {
@@ -2053,8 +2068,7 @@ client.on('interactionCreate', async (interaction) => {
                         .setColor(guildSettings.color)
                         .setTitle('⚙️ Giveaway Settings')
                         .addFields(
-                            { name: 'Embed Color', value: guildSettings.color, inline: true },
-                            { name: 'Join Emoji', value: guildSettings.emoji, inline: true }
+                            { name: 'Embed Color', value: guildSettings.color, inline: true }
                         )
                         .setFooter({ text: 'Mickey Trap Academy' })
                         .setTimestamp();
@@ -2836,93 +2850,120 @@ client.on('messageCreate', async (message) => {
 });
 
 // Handle message reaction add (giveaway join)
-client.on('messageReactionAdd', async (reaction, user) => {
-    try {
-        if (user.bot) return; // Ignore bot reactions
+// Handle button interactions (giveaway buttons)
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isButton()) return;
 
-        // Fetch full reaction if partial
-        if (reaction.partial) {
-            await reaction.fetch();
+    try {
+        const customId = interaction.customId;
+
+        // Giveaway Join Button
+        if (customId.startsWith('giveaway_join-')) {
+            const giveawayId = customId.replace('giveaway_join-', '');
+            const giveaways = loadGiveawayConfig();
+            const giveaway = giveaways[giveawayId];
+
+            if (!giveaway) {
+                return await interaction.reply({ content: '❌ Giveaway not found!', flags: 64 });
+            }
+
+            if (giveaway.ended) {
+                return await interaction.reply({ content: '❌ Giveaway already ended!', flags: 64 });
+            }
+
+            if (giveaway.participants.includes(interaction.user.id)) {
+                return await interaction.reply({ content: '❌ You already joined!', flags: 64 });
+            }
+
+            giveaway.participants.push(interaction.user.id);
+            saveGiveawayConfig(giveaways);
+
+            // Update embed
+            const channel = interaction.guild.channels.cache.get(giveaway.channelId);
+            if (channel) {
+                try {
+                    const message = await channel.messages.fetch(giveaway.messageId);
+                    const embed = message.embeds[0];
+                    const newEmbed = new EmbedBuilder(embed.data)
+                        .spliceFields(1, 1, {
+                            name: '👥 Participants',
+                            value: `${giveaway.participants.length}`,
+                            inline: true
+                        });
+                    await message.edit({ embeds: [newEmbed] });
+                } catch (error) {
+                    console.error('Error updating embed:', error);
+                }
+            }
+
+            await interaction.reply({ content: `✅ Joined! Total participants: ${giveaway.participants.length}`, flags: 64 });
         }
 
-        const giveaways = loadGiveawayConfig();
+        // Giveaway Leave Button
+        if (customId.startsWith('giveaway_leave-')) {
+            const giveawayId = customId.replace('giveaway_leave-', '');
+            const giveaways = loadGiveawayConfig();
+            const giveaway = giveaways[giveawayId];
 
-        // Check if this message is a giveaway
-        for (const [giveawayId, giveaway] of Object.entries(giveaways)) {
-            if (giveaway.messageId === reaction.message.id && giveaway.channelId === reaction.message.channelId) {
-                if (giveaway.ended) return;
-                if (reaction.emoji.name !== giveaway.emoji && reaction.emoji.toString() !== giveaway.emoji) return;
-
-                // Add participant if not already there
-                if (!giveaway.participants.includes(user.id)) {
-                    giveaway.participants.push(user.id);
-                    saveGiveawayConfig(giveaways);
-
-                    // Update participants count
-                    try {
-                        const message = await reaction.message.channel.messages.fetch(giveaway.messageId);
-                        const embed = message.embeds[0];
-                        const newEmbed = new EmbedBuilder(embed.data)
-                            .spliceFields(2, 1, {
-                                name: 'Participants',
-                                value: `${giveaway.participants.length}`,
-                                inline: true
-                            });
-                        await message.edit({ embeds: [newEmbed] });
-                    } catch (error) {
-                        console.error('Error updating participant count:', error);
-                    }
-                }
-                return;
+            if (!giveaway) {
+                return await interaction.reply({ content: '❌ Giveaway not found!', flags: 64 });
             }
+
+            if (!giveaway.participants.includes(interaction.user.id)) {
+                return await interaction.reply({ content: '❌ You are not in this giveaway!', flags: 64 });
+            }
+
+            giveaway.participants = giveaway.participants.filter(id => id !== interaction.user.id);
+            saveGiveawayConfig(giveaways);
+
+            // Update embed
+            const channel = interaction.guild.channels.cache.get(giveaway.channelId);
+            if (channel) {
+                try {
+                    const message = await channel.messages.fetch(giveaway.messageId);
+                    const embed = message.embeds[0];
+                    const newEmbed = new EmbedBuilder(embed.data)
+                        .spliceFields(1, 1, {
+                            name: '👥 Participants',
+                            value: `${giveaway.participants.length}`,
+                            inline: true
+                        });
+                    await message.edit({ embeds: [newEmbed] });
+                } catch (error) {
+                    console.error('Error updating embed:', error);
+                }
+            }
+
+            await interaction.reply({ content: `✅ Left giveaway! Total participants: ${giveaway.participants.length}`, flags: 64 });
+        }
+
+        // Giveaway Participants Button
+        if (customId.startsWith('giveaway_participants-')) {
+            const giveawayId = customId.replace('giveaway_participants-', '');
+            const giveaways = loadGiveawayConfig();
+            const giveaway = giveaways[giveawayId];
+
+            if (!giveaway) {
+                return await interaction.reply({ content: '❌ Giveaway not found!', flags: 64 });
+            }
+
+            if (giveaway.participants.length === 0) {
+                return await interaction.reply({ content: '❌ No participants yet!', flags: 64 });
+            }
+
+            const participantsList = giveaway.participants.slice(0, 25).map((id, idx) => `${idx + 1}. <@${id}>`).join('\n');
+            const remainingCount = giveaway.participants.length > 25 ? `\n\n... and ${giveaway.participants.length - 25} more` : '';
+
+            const participantsEmbed = new EmbedBuilder()
+                .setColor(giveaway.color || '#FF00FF')
+                .setTitle(`👥 Participants (${giveaway.participants.length})`)
+                .setDescription(participantsList + remainingCount)
+                .setFooter({ text: `Giveaway: ${giveaway.prize}` });
+
+            await interaction.reply({ embeds: [participantsEmbed], flags: 64 });
         }
     } catch (error) {
-        console.error('Error handling reaction add:', error);
-    }
-});
-
-// Handle message reaction remove (giveaway leave)
-client.on('messageReactionRemove', async (reaction, user) => {
-    try {
-        if (user.bot) return;
-
-        if (reaction.partial) {
-            await reaction.fetch();
-        }
-
-        const giveaways = loadGiveawayConfig();
-
-        for (const [giveawayId, giveaway] of Object.entries(giveaways)) {
-            if (giveaway.messageId === reaction.message.id && giveaway.channelId === reaction.message.channelId) {
-                if (giveaway.ended) return;
-                if (reaction.emoji.name !== giveaway.emoji && reaction.emoji.toString() !== giveaway.emoji) return;
-
-                // Remove participant
-                const idx = giveaway.participants.indexOf(user.id);
-                if (idx > -1) {
-                    giveaway.participants.splice(idx, 1);
-                    saveGiveawayConfig(giveaways);
-
-                    // Update participants count
-                    try {
-                        const message = await reaction.message.channel.messages.fetch(giveaway.messageId);
-                        const embed = message.embeds[0];
-                        const newEmbed = new EmbedBuilder(embed.data)
-                            .spliceFields(2, 1, {
-                                name: 'Participants',
-                                value: `${giveaway.participants.length}`,
-                                inline: true
-                            });
-                        await message.edit({ embeds: [newEmbed] });
-                    } catch (error) {
-                        console.error('Error updating participant count:', error);
-                    }
-                }
-                return;
-            }
-        }
-    } catch (error) {
-        console.error('Error handling reaction remove:', error);
+        console.error('Error handling button interaction:', error);
     }
 });
 
