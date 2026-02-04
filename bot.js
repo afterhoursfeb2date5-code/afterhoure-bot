@@ -1811,7 +1811,7 @@ client.on('interactionCreate', async (interaction) => {
                 // Load settings
                 const settings = loadGiveawaySettings();
                 const guildSettings = settings[interaction.guildId] || {
-                    color: '#FF00FF'
+                    color: '#808080'
                 };
 
                 const endsAt = Math.floor((Date.now() + durationMs) / 1000);
@@ -2060,7 +2060,7 @@ client.on('interactionCreate', async (interaction) => {
                 const subcommand = interaction.options.getSubcommand();
                 const settings = loadGiveawaySettings();
                 const guildSettings = settings[interaction.guildId] || {
-                    color: '#FF00FF'
+                    color: '#808080'
                 };
 
                 if (subcommand === 'show') {
