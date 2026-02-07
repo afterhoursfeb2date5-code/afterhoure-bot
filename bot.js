@@ -2111,13 +2111,16 @@ client.on('messageCreate', async (message) => {
             
             for (const bannedWord of guildFilter) {
                 if (messageContent.includes(bannedWord)) {
+                    console.log(`🚫 Banned word detected: "${bannedWord}" in message from ${message.author.tag}: "${message.content}"`);
                     try {
-                        // Delete message with proper error handling
-                        await message.delete();
+                        // Delete message immediately
+                        const deleted = await message.delete();
+                        console.log(`✅ Message deleted successfully`);
+                        return;
                     } catch (error) {
-                        console.error('Error deleting banned word message:', error);
+                        console.error('❌ Error deleting banned word message:', error.message);
+                        return;
                     }
-                    return; // Stop processing after first banned word found
                 }
             }
         }
