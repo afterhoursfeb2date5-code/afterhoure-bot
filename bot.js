@@ -2111,13 +2111,8 @@ client.on('messageCreate', async (message) => {
             
             for (const bannedWord of guildFilter) {
                 if (messageContent.includes(bannedWord)) {
-                    // Delete message
+                    // Delete message only (no warning)
                     await message.delete().catch(() => {});
-                    
-                    // Send warning (tanpa reply reference biar ga glitch)
-                    await message.channel.send({
-                        content: `🚫 ${message.author}, pesan kamu berisi kata yang dilarang!`
-                    }).catch(() => {});
                     
                     return; // Stop processing after first banned word found
                 }
