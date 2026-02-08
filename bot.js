@@ -109,7 +109,6 @@ const musicManager = {
 const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
-const WORD_FILTER_FILE = path.join(CONFIG_DIR, 'word-filter.json');
 
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
@@ -155,24 +154,7 @@ function saveLogsConfig(config) {
     }
 }
 
-function loadWordFilter() {
-    try {
-        if (fs.existsSync(WORD_FILTER_FILE)) {
-            return JSON.parse(fs.readFileSync(WORD_FILTER_FILE, 'utf8'));
-        }
-    } catch (error) {
-        console.error('Error loading word filter:', error);
-    }
-    return {};
-}
 
-function saveWordFilter(config) {
-    try {
-        fs.writeFileSync(WORD_FILTER_FILE, JSON.stringify(config, null, 2), 'utf8');
-    } catch (error) {
-        console.error('Error saving word filter:', error);
-    }
-}
 
 // User points config
 
@@ -437,26 +419,6 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
-    new SlashCommandBuilder()
-        .setName('addword')
-        .setDescription('Add a word to the banned words list')
-        .addStringOption(option =>
-            option.setName('word')
-                .setDescription('Word to ban')
-                .setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-    new SlashCommandBuilder()
-        .setName('removeword')
-        .setDescription('Remove a word from the banned words list')
-        .addStringOption(option =>
-            option.setName('word')
-                .setDescription('Word to unban')
-                .setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-    new SlashCommandBuilder()
-        .setName('wordlist')
-        .setDescription('View all banned words in this server')
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -1711,95 +1673,7 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        if (commandName === 'addword') {
-            try {
-                const word = interaction.options.getString('word').toLowerCase();
-                const filter = loadWordFilter();
-                const guildFilter = filter[interaction.guildId] || [];
 
-                if (guildFilter.includes(word)) {
-                    return await interaction.reply({
-                        content: `❌ Kata "${word}" sudah ada di ban list!`,
-                        flags: 64
-                    });
-                }
-
-                guildFilter.push(word);
-                filter[interaction.guildId] = guildFilter;
-                saveWordFilter(filter);
-
-                await interaction.reply({
-                    content: `✅ Kata "${word}" ditambahkan ke ban list! (Total: ${guildFilter.length})`,
-                    flags: 64
-                });
-            } catch (error) {
-                console.error('Error in addword command:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
-
-        if (commandName === 'removeword') {
-            try {
-                const word = interaction.options.getString('word').toLowerCase();
-                const filter = loadWordFilter();
-                const guildFilter = filter[interaction.guildId] || [];
-
-                const idx = guildFilter.indexOf(word);
-                if (idx === -1) {
-                    return await interaction.reply({
-                        content: `❌ Kata "${word}" tidak ada di ban list!`,
-                        flags: 64
-                    });
-                }
-
-                guildFilter.splice(idx, 1);
-                filter[interaction.guildId] = guildFilter;
-                saveWordFilter(filter);
-
-                await interaction.reply({
-                    content: `✅ Kata "${word}" dihapus dari ban list! (Total: ${guildFilter.length})`,
-                    flags: 64
-                });
-            } catch (error) {
-                console.error('Error in removeword command:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
-
-        if (commandName === 'wordlist') {
-            try {
-                const filter = loadWordFilter();
-                const guildFilter = filter[interaction.guildId] || [];
-
-                if (guildFilter.length === 0) {
-                    return await interaction.reply({
-                        content: '✅ Tidak ada kata yang dilarang di server ini!',
-                        flags: 64
-                    });
-                }
-
-                const wordListEmbed = new EmbedBuilder()
-                    .setColor('#808080')
-                    .setTitle('🚫 Banned Words List')
-                    .setDescription(guildFilter.map((w, i) => `${i + 1}. \`${w}\``).join('\n'))
-                    .setFooter({ text: `Total: ${guildFilter.length} words` })
-                    .setTimestamp();
-
-                await interaction.reply({ embeds: [wordListEmbed], flags: 64 });
-            } catch (error) {
-                console.error('Error in wordlist command:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
 
     }
 
@@ -2102,29 +1976,6 @@ client.on('messageCreate', async (message) => {
     if (!message.guild) return;
 
     try {
-        // Check word filter
-        const filter = loadWordFilter();
-        const guildFilter = filter[message.guildId] || [];
-        
-        if (guildFilter.length > 0) {
-            const messageContent = message.content.toLowerCase();
-            
-            for (const bannedWord of guildFilter) {
-                if (messageContent.includes(bannedWord)) {
-                    console.log(`🚫 Banned word detected: "${bannedWord}" in message from ${message.author.tag}: "${message.content}"`);
-                    try {
-                        // Delete message immediately
-                        const deleted = await message.delete();
-                        console.log(`✅ Message deleted successfully`);
-                        return;
-                    } catch (error) {
-                        console.error('❌ Error deleting banned word message:', error.message);
-                        return;
-                    }
-                }
-            }
-        }
-
         // Handle prefix commands
         if (message.content.startsWith(PREFIX)) {
             const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
@@ -2312,33 +2163,6 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ma.meme - Random meme
-            else if (command === 'meme') {
-                try {
-                    const response = await fetch('https://api.imgflip.com/get_memes');
-                    const data = await response.json();
-
-                    if (!data.success || !data.data.memes || data.data.memes.length === 0) {
-                        return await message.reply({ content: '❌ Error fetching memes! Try again.', flags: 64 });
-                    }
-
-                    // Get random meme
-                    const randomMeme = data.data.memes[Math.floor(Math.random() * data.data.memes.length)];
-
-                    const memeEmbed = new EmbedBuilder()
-                        .setTitle(randomMeme.name)
-                        .setImage(randomMeme.url)
-                        .setColor('#808080')
-                        .setFooter({ text: `Meme #${randomMeme.id}` })
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [memeEmbed] });
-                } catch (error) {
-                    console.error('Error fetching meme:', error);
-                    await message.reply({ content: '❌ Error fetching meme! API sedang bermasalah.', flags: 64 });
-                }
-            }
-
             // ma.removebg - Remove background from image
             else if (command === 'removebg') {
                 try {
@@ -2501,11 +2325,6 @@ client.on('messageCreate', async (message) => {
                             { 
                                 name: 'ma.removebg', 
                                 value: 'Remove background dari gambar pakai remove.bg API\nContoh: Upload gambar → `ma.removebg` atau reply ke image → `ma.removebg`', 
-                                inline: false 
-                            },
-                            { 
-                                name: 'ma.meme', 
-                                value: 'Kirim random meme dari internet 😂\nContoh: `ma.meme`', 
                                 inline: false 
                             },
                             { 
