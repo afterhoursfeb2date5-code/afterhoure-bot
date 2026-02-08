@@ -562,7 +562,7 @@ async function endGiveaway(giveawayId, guild) {
                         .setColor(giveaway.color)
                         .setTitle('🎉 Congratulations!')
                         .setDescription(`You won the giveaway for **${giveaway.prize}** in ${guild.name}!`)
-                        .setFooter({ text: 'Mickey Trap Academy' })
+                        .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' })
                         .setTimestamp();
 
                     await user.send({ embeds: [dmEmbed] }).catch(() => {});
@@ -729,7 +729,7 @@ client.on('interactionCreate', async (interaction) => {
 🥴 | **Delulu**
 😒 | **Nonchalant** `)
                     .setImage('https://imgur.com/LLi6XfL.png')
-                    .setFooter({ text: 'Mickey Trap Academy' })
+                    .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' })
                     .setTimestamp();
 
                 const characterMenu = new ActionRowBuilder()
@@ -817,7 +817,7 @@ client.on('interactionCreate', async (interaction) => {
 🎪 | **Apex Legends**
 🏗️ | **Fortnite**`)
                     .setImage('https://i.imgur.com/LwqQEPT.png')
-                    .setFooter({ text: 'Mickey Trap Academy' })
+                    .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' })
                     .setTimestamp();
 
                 const gamingMenu = new ActionRowBuilder()
@@ -888,7 +888,7 @@ client.on('interactionCreate', async (interaction) => {
 ⚽ | **Sports**
 🎨 | **Art & Design**`)
                     .setImage('https://i.imgur.com/UFP0ybB.png')
-                    .setFooter({ text: 'Mickey Trap Academy' })
+                    .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' })
                     .setTimestamp();
 
                 const hobbiesMenu = new ActionRowBuilder()
@@ -967,7 +967,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (footerText) {
                     embed.setFooter({ text: footerText });
                 } else {
-                    embed.setFooter({ text: 'Mickey Trap Academy' });
+                    embed.setFooter({ text: '          ' });
                 }
 
                 if (imageUrl) {
@@ -1838,7 +1838,7 @@ client.on('interactionCreate', async (interaction) => {
                 if (footerText) {
                     embed.setFooter({ text: footerText });
                 } else {
-                    embed.setFooter({ text: 'Mickey Trap Academy' });
+                    embed.setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' });
                 }
 
                 // Create preview with buttons
@@ -2575,7 +2575,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                         .setDescription(`${newMember} baru aja **boost server** kami!\n\nTerima kasih sudah support server ini! 💜\n\n📌 **Silahkan klaim custom role kamu di** #╠・✨—custom-role-booster`)
                         .setThumbnail(newMember.user.displayAvatarURL())
                         .setTimestamp()
-                        .setFooter({ text: 'Mickey Trap Academy Boosters' });
+                        .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬 Boosters' });
 
                     await channel.send({ embeds: [boostEmbed] }).catch(() => {});
                 }
