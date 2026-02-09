@@ -563,7 +563,7 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
             Routes.applicationCommands(CLIENT_ID),
             { body: commands }
         );
-        console.log('✅ Slash commands registered!');
+        console.log('<:FAM_Approved:1470313502190080043> Slash commands registered!');
     } catch (error) {
         console.error('❌ Error registering commands:', error);
     }
@@ -626,7 +626,7 @@ async function playNextSong(guildId, interaction) {
 }
 
 client.once('clientReady', () => {
-    console.log(`✅ ${client.user.tag} udah online!`);
+    console.log(`<:FAM_Approved:1470313502190080043> ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
     
     // Load configs from file
@@ -877,7 +877,7 @@ client.on('interactionCreate', async (interaction) => {
                     components: [hobbiesMenu] 
                 });
 
-                await interaction.reply({ content: '✅ Role selection menu udah di-setup!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> Role selection menu udah di-setup!', flags: 64 });
             } catch (error) {
                 console.error('Error setting up roles:', error);
                 await interaction.reply({ content: '❌ Error saat setup menu!', flags: 64 });
@@ -961,7 +961,7 @@ client.on('interactionCreate', async (interaction) => {
                     await channel.send({ embeds: [embed] });
                 }
 
-                await interaction.reply({ content: '✅ Embed berhasil dikirim!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> Embed berhasil dikirim!', flags: 64 });
             } catch (error) {
                 console.error('Error sending embed:', error);
                 await interaction.reply({ content: '❌ Error saat mengirim embed!', flags: 64 });
@@ -999,7 +999,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 // Reply dengan notifikasi, auto-delete dalam 1 detik
                 const reply = await interaction.reply({ 
-                    content: '✅ Message berhasil dikirim!', 
+                    content: '<:FAM_Approved:1470313502190080043> Message berhasil dikirim!', 
                     flags: 64 
                 });
                 
@@ -1041,7 +1041,7 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User banned!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User banned!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
@@ -1095,7 +1095,7 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User kicked!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User kicked!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
@@ -1133,7 +1133,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const unbanEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
-                    .setTitle('✅ User Unbanned')
+                    .setTitle('<:FAM_Approved:1470313502190080043> User Unbanned')
                     .addFields(
                         { name: 'User ID', value: userId, inline: true },
                         { name: 'Reason', value: reason, inline: true },
@@ -1141,12 +1141,12 @@ client.on('interactionCreate', async (interaction) => {
                     )
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User unbanned!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User unbanned!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
                     interaction.guild,
-                    '✅ User Unbanned',
+                    '<:FAM_Approved:1470313502190080043> User Unbanned',
                     `**User ID:** ${userId}\n**Reason:** ${reason}\n**Unbanned by:** ${interaction.user.tag}`,
                     '#00FF00'
                 );
@@ -1264,7 +1264,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const addEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
-                    .setTitle('✅ Autoresponder Ditambahkan')
+                    .setTitle('<:FAM_Approved:1470313502190080043> Autoresponder Ditambahkan')
                     .addFields(
                         { name: 'Trigger', value: `\`${sentence}\``, inline: true },
                         { name: 'Response', value: response, inline: false },
@@ -1336,7 +1336,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const removeEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
-                    .setTitle('✅ Autoresponder Dihapus')
+                    .setTitle('<:FAM_Approved:1470313502190080043> Autoresponder Dihapus')
                     .addFields({
                         name: 'Trigger',
                         value: `\`${sentence}\``,
@@ -1402,7 +1402,7 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User timed out!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User timed out!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
@@ -1447,7 +1447,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const unmuteEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
-                    .setTitle('✅ User Unmuted')
+                    .setTitle('<:FAM_Approved:1470313502190080043> User Unmuted')
                     .addFields(
                         { name: 'User', value: `${user.tag} (${user.id})`, inline: true },
                         { name: 'Reason', value: reason, inline: true },
@@ -1456,12 +1456,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User unmuted!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User unmuted!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
                     interaction.guild,
-                    '✅ User Unmuted',
+                    '<:FAM_Approved:1470313502190080043> User Unmuted',
                     `**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}\n**Unmuted by:** ${interaction.user.tag}`,
                     '#00FF00'
                 );
@@ -1504,7 +1504,7 @@ client.on('interactionCreate', async (interaction) => {
                     .setThumbnail(user.displayAvatarURL())
                     .setTimestamp();
 
-                await interaction.reply({ content: '✅ User muted!', flags: 64 });
+                await interaction.reply({ content: '<:FAM_Approved:1470313502190080043> User muted!', flags: 64 });
 
                 // Send to logs channel
                 await sendLog(
@@ -1549,7 +1549,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const connectEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
-                    .setTitle('✅ Bot Connected')
+                    .setTitle('<:FAM_Approved:1470313502190080043> Bot Connected')
                     .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**!`)
                     .setTimestamp();
 
@@ -1581,7 +1581,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 const disconnectEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
-                    .setTitle('✅ Bot Disconnected')
+                    .setTitle('<:FAM_Approved:1470313502190080043> Bot Disconnected')
                     .setDescription('Bot sudah disconnect dari voice channel!')
                     .setTimestamp();
 
@@ -1745,7 +1745,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 // Reply to user with auto-delete after 2 seconds
                 const reply = await interaction.reply({
-                    content: '✅ Suggestion berhasil dikirim!',
+                    content: '<:FAM_Approved:1470313502190080043> Suggestion berhasil dikirim!',
                     flags: 64
                 });
                 setTimeout(() => {
@@ -1782,7 +1782,7 @@ client.on('interactionCreate', async (interaction) => {
                 client.embeds = embeds;
 
                 await interaction.reply({
-                    content: '✅ Embed sent successfully!',
+                    content: '<:FAM_Approved:1470313502190080043> Embed sent successfully!',
                     flags: 64
                 });
             } catch (error) {
@@ -1931,7 +1931,7 @@ client.on('interactionCreate', async (interaction) => {
             }).join('\n');
             
             responseEmbed.addFields({
-                name: '✅ Added Roles',
+                name: '<:FAM_Approved:1470313502190080043> Added Roles',
                 value: addedText,
                 inline: false
             });
@@ -1961,7 +1961,7 @@ client.on('interactionCreate', async (interaction) => {
         if (addedRoles.length === 0 && removedRoles.length === 0) {
             responseEmbed
                 .setColor('#FFD700')
-                .setDescription('✅ No changes made!');
+                .setDescription('<:FAM_Approved:1470313502190080043> No changes made!');
         } else {
             responseEmbed.setColor('#00D9FF');
         }
@@ -2077,7 +2077,7 @@ client.on('messageCreate', async (message) => {
 
                     const successEmbed = new EmbedBuilder()
                         .setColor('#00FF00')
-                        .setTitle('✅ Ikon Role Berhasil Diubah')
+                        .setTitle('<:FAM_Approved:1470313502190080043> Ikon Role Berhasil Diubah')
                         .setDescription(`Ikon untuk role **${role.name}** telah diperbarui!`)
                         .setThumbnail(attachment.url)
                         .setTimestamp();
@@ -2178,7 +2178,7 @@ client.on('messageCreate', async (message) => {
 
                     const createEmbed = new EmbedBuilder()
                         .setColor(roleColor1)
-                        .setTitle('✅ Role Berhasil Dibuat')
+                        .setTitle('<:FAM_Approved:1470313502190080043> Role Berhasil Dibuat')
                         .setDescription(`Role **${newRole.name}** telah dibuat!\n\n⚠️ **Untuk apply Gradient Style:**\nGo to Server Settings → Roles → ${newRole.name} → Change Syle to "Gradient"`)
                         .addFields(
                             { name: 'Role ID', value: newRole.id, inline: true },
@@ -2280,7 +2280,7 @@ client.on('messageCreate', async (message) => {
                         // Send image sebagai file
                         const successEmbed = new EmbedBuilder()
                             .setColor('#00FF00')
-                            .setTitle('✅ Background Removed!')
+                            .setTitle('<:FAM_Approved:1470313502190080043> Background Removed!')
                             .setDescription('Background dari gambar kamu sudah dihilangkan!')
                             .setImage(`attachment://${fileName}`)
                             .setFooter({ text: 'Powered by remove.bg' })
