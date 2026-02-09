@@ -1717,12 +1717,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setColor(0x5865F2)
                     .setTitle('💡 New Suggestion!')
                     .addFields({
-                        name: '<:idea:1027120927575654400> Submitter:',
+                        name: '👤 Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
                         inline: false
                     },
                     {
-                        name: '<:suggestion:1184089287755563068> Suggestion:',
+                        name: '💬 Suggestion:',
                         value: suggestionText,
                         inline: false
                     })
