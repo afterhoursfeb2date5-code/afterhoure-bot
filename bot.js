@@ -404,6 +404,9 @@ const commands = [
                 .setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
     new SlashCommandBuilder()
+        .setName('suggest')
+        .setDescription('Submit a suggestion to the server'),
+    new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
@@ -1592,6 +1595,31 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'suggest') {
+            try {
+                const modal = new ModalBuilder()
+                    .setCustomId('suggestion_modal')
+                    .setTitle('New Suggestion');
+
+                const textInput = new TextInputBuilder()
+                    .setCustomId('suggestion_text')
+                    .setLabel('Tuliskan saran dan masukan')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true);
+
+                const actionRow = new ActionRowBuilder().addComponents(textInput);
+                modal.addComponents(actionRow);
+
+                await interaction.showModal(modal);
+            } catch (error) {
+                console.error('Error showing suggestion modal:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
 
 
     }
@@ -1670,9 +1698,74 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
         }
+
+        if (interaction.customId === 'suggestion_modal') {
+            try {
+                const suggestionText = interaction.fields.getTextInputValue('suggestion_text');
+                const suggestionsChannelId = '1470305240489132042';
+
+                const suggestionsChannel = interaction.guild.channels.cache.get(suggestionsChannelId);
+                if (!suggestionsChannel) {
+                    return await interaction.reply({
+                        content: '❌ Suggestions channel tidak ditemukan!',
+                        flags: 64
+                    });
+                }
+
+                // Create suggestion embed
+                const suggestionEmbed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle('💡 New Suggestion!')
+                    .addFields({
+                        name: '👤 Submitter:',
+                        value: `${interaction.user} <@${interaction.user.id}>`,
+                        inline: false
+                    },
+                    {
+                        name: '💬 Suggestion:',
+                        value: suggestionText,
+                        inline: false
+                    })
+                    .setThumbnail(interaction.user.displayAvatarURL())
+                    .setTimestamp()
+                    .setFooter({ text: 'Suggestion Box' });
+
+                // Create vote buttons
+                const upvoteButton = new ButtonBuilder()
+                    .setCustomId(`suggest_upvote_${Date.now()}`)
+                    .setLabel('0')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('✅');
+
+                const downvoteButton = new ButtonBuilder()
+                    .setCustomId(`suggest_downvote_${Date.now()}`)
+                    .setLabel('0')
+                    .setStyle(ButtonStyle.Danger)
+                    .setEmoji('❌');
+
+                const buttonRow = new ActionRowBuilder().addComponents(upvoteButton, downvoteButton);
+
+                // Send to suggestions channel
+                await suggestionsChannel.send({
+                    embeds: [suggestionEmbed],
+                    components: [buttonRow]
+                });
+
+                // Reply to user
+                await interaction.reply({
+                    content: '✅ Suggestion berhasil dikirim!',
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error processing suggestion:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
     }
 
-    // Handle buttons for embed preview
     if (interaction.isButton()) {
         if (interaction.customId === 'embed_send') {
             try {
