@@ -110,6 +110,10 @@ const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
 
+// Hardcoded Channel IDs
+const HARDCODED_BOOSTER_CHANNEL_ID = '1468793035042062531';
+const HARDCODED_LOGS_CHANNEL_ID = '1470227456396103859';
+
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
@@ -424,11 +428,8 @@ const commands = [
 // Helper function to send logs
 async function sendLog(guild, title, description, color = '#FF9900') {
     try {
-        const logsChannelId = client.logsConfig?.[guild.id];
-        if (!logsChannelId) return; // No logs channel configured
-        
-        const logsChannel = guild.channels.cache.get(logsChannelId);
-        if (!logsChannel) return;
+        const logsChannel = guild.channels.cache.get(HARDCODED_LOGS_CHANNEL_ID);
+        if (!logsChannel) return; // Logs channel tidak ada
         
         const logEmbed = new EmbedBuilder()
             .setColor(color)
@@ -2382,26 +2383,19 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
         if (wasNotBoosting && isNowBoosting) {
             // Member just boosted!
-            const config = client.boosterConfig?.[newMember.guild.id];
+            const channel = newMember.guild.channels.cache.get(HARDCODED_BOOSTER_CHANNEL_ID);
+            if (channel) {
+                const boostCount = newMember.guild.premiumSubscriptionCount || 0;
+                const boostEmbed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle('<:FAM_Bosster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
+                    .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at 🎪 · custom-role`)
+                    .setThumbnail(newMember.user.displayAvatarURL())
+                    .setTimestamp()
+                    .setFooter({ text: `We currently have ${boostCount} boosts` });
 
-            if (config?.channelId) {
-                // Send thank-you message
-                const channel = newMember.guild.channels.cache.get(config.channelId);
-                if (channel) {
-                    const boostCount = newMember.guild.premiumSubscriptionCount || 0;
-                    const boostEmbed = new EmbedBuilder()
-                        .setColor(0x5865F2)
-                        .setTitle('<:FAM_Bosster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
-                        .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at 🎪 · custom-role`)
-                        .setThumbnail(newMember.user.displayAvatarURL())
-                        .setTimestamp()
-                        .setFooter({ text: `We currently have ${boostCount} boosts` });
-
-                    await channel.send({ embeds: [boostEmbed] }).catch(() => {});
-                }
+                await channel.send({ embeds: [boostEmbed] }).catch(() => {});
             }
-
-
         }
     } catch (error) {
         console.error('Error handling boost detection:', error);
