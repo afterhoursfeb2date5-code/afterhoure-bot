@@ -410,6 +410,10 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('preview-booster')
+        .setDescription('Preview booster message embed')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -1613,6 +1617,34 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.showModal(modal);
             } catch (error) {
                 console.error('Error showing suggestion modal:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'preview-booster') {
+            try {
+                // Get current boost count from guild
+                const boostCount = interaction.guild.premiumSubscriptionCount || 0;
+
+                // Create booster message preview embed
+                const boostEmbed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle('🚀 Hi, ' + interaction.user + '! Thanks for the boost.')
+                    .setDescription(`Enjoy your special perks ⭐\n\nClaim your Custom Role at 🎪 · custom-role`)
+                    .setThumbnail(interaction.user.displayAvatarURL())
+                    .setTimestamp()
+                    .setFooter({ text: `We currently have ${boostCount} boosts` });
+
+                await interaction.reply({
+                    content: '📋 **Preview Booster Message:**',
+                    embeds: [boostEmbed],
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error previewing booster message:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
