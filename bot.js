@@ -1715,14 +1715,14 @@ client.on('interactionCreate', async (interaction) => {
                 // Create suggestion embed
                 const suggestionEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('<a:FAM_Lamp:1470350609218539633> New Suggestion!')
+                    .setTitle('<:logo:1470353877386924220> New Suggestion!')
                     .addFields({
-                        name: '<:suggest:1470352894560698534> Submitter:',
+                        name: '<:ide:1470352870011306004> Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
                         inline: false
                     },
                     {
-                        name: '<:ide:1470352870011306004> Suggestion:',
+                        name: '<:suggest:1470352894560698534> Suggestion:',
                         value: suggestionText,
                         inline: false
                     })
