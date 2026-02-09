@@ -1726,7 +1726,6 @@ client.on('interactionCreate', async (interaction) => {
                         value: suggestionText,
                         inline: false
                     })
-                    .setImage('https://i.imgur.com/U76N6jc.png')
                     .setThumbnail(interaction.user.displayAvatarURL());
 
                 // Create suggestion box button (gray color)
