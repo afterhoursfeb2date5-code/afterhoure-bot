@@ -109,6 +109,7 @@ const musicManager = {
 const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
+const AUTO_RESPONSES_FILE = path.join(CONFIG_DIR, 'autoresponses.json');
 
 // Hardcoded Channel IDs
 const HARDCODED_BOOSTER_CHANNEL_ID = '1468793035042062531';
@@ -155,6 +156,51 @@ function saveLogsConfig(config) {
         fs.writeFileSync(LOGS_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
     } catch (error) {
         console.error('Error saving logs config:', error);
+    }
+}
+
+function loadAutoResponses() {
+    try {
+        if (fs.existsSync(AUTO_RESPONSES_FILE)) {
+            const data = fs.readFileSync(AUTO_RESPONSES_FILE, 'utf8');
+            const parsed = JSON.parse(data);
+            // Convert array ke Map
+            const autoResponses = new Map();
+            if (Array.isArray(parsed)) {
+                for (const item of parsed) {
+                    autoResponses.set(item.sentence, {
+                        response: item.response,
+                        mention: item.mention || false,
+                        deleteTrigger: item.deleteTrigger || false,
+                        createdBy: item.createdBy,
+                        createdAt: item.createdAt
+                    });
+                }
+            }
+            console.log(`📝 Loaded ${autoResponses.size} auto-responses`);
+            return autoResponses;
+        }
+        return new Map();
+    } catch (error) {
+        console.error('Error loading auto-responses:', error);
+        return new Map();
+    }
+}
+
+function saveAutoResponses(autoResponses) {
+    try {
+        // Convert Map ke array
+        const data = Array.from(autoResponses.entries()).map(([sentence, config]) => ({
+            sentence,
+            response: config.response,
+            mention: config.mention,
+            deleteTrigger: config.deleteTrigger,
+            createdBy: config.createdBy,
+            createdAt: config.createdAt
+        }));
+        fs.writeFileSync(AUTO_RESPONSES_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving auto-responses:', error);
     }
 }
 
@@ -632,6 +678,7 @@ client.once('clientReady', () => {
     // Load configs from file
     client.boosterConfig = loadBoosterConfig();
     client.logsConfig = loadLogsConfig();
+    client.autoResponses = loadAutoResponses();
     console.log('📁 Configs loaded from file');
     
     // Set rotating presence
@@ -1259,8 +1306,11 @@ client.on('interactionCreate', async (interaction) => {
                     mention: mention,
                     deleteTrigger: deleteTrigger,
                     createdBy: interaction.user.tag,
-                    createdAt: new Date()
+                    createdAt: new Date().toISOString()
                 });
+                
+                // Save ke file
+                saveAutoResponses(client.autoResponses);
 
                 const addEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
@@ -1333,6 +1383,9 @@ client.on('interactionCreate', async (interaction) => {
                 }
 
                 client.autoResponses.delete(sentence);
+                
+                // Save ke file
+                saveAutoResponses(client.autoResponses);
 
                 const removeEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
