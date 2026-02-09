@@ -2388,13 +2388,14 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                 // Send thank-you message
                 const channel = newMember.guild.channels.cache.get(config.channelId);
                 if (channel) {
+                    const boostCount = newMember.guild.premiumSubscriptionCount || 0;
                     const boostEmbed = new EmbedBuilder()
                         .setColor(0x5865F2)
                         .setTitle('<:FAM_Bosster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
-                        .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
+                        .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at 🎪 · custom-role`)
                         .setThumbnail(newMember.user.displayAvatarURL())
                         .setTimestamp()
-                        .setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬 Boosters' });
+                        .setFooter({ text: `We currently have ${boostCount} boosts` });
 
                     await channel.send({ embeds: [boostEmbed] }).catch(() => {});
                 }
