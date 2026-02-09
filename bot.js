@@ -1726,8 +1726,7 @@ client.on('interactionCreate', async (interaction) => {
                         value: suggestionText,
                         inline: false
                     })
-                    .setThumbnail(interaction.user.displayAvatarURL())
-                    .setTimestamp();
+                    .setThumbnail(interaction.user.displayAvatarURL());
 
                 // Create suggestion box button (gray color)
                 const suggestionBoxButton = new ButtonBuilder()
@@ -1744,11 +1743,14 @@ client.on('interactionCreate', async (interaction) => {
                     components: [boxRow]
                 });
 
-                // Reply to user
-                await interaction.reply({
+                // Reply to user with auto-delete after 2 seconds
+                const reply = await interaction.reply({
                     content: '✅ Suggestion berhasil dikirim!',
                     flags: 64
                 });
+                setTimeout(() => {
+                    reply.delete().catch(console.error);
+                }, 2000);
             } catch (error) {
                 console.error('Error processing suggestion:', error);
                 await interaction.reply({
