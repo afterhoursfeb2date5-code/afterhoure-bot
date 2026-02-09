@@ -1629,11 +1629,11 @@ client.on('interactionCreate', async (interaction) => {
                 // Get current boost count from guild
                 const boostCount = interaction.guild.premiumSubscriptionCount || 0;
 
-                // Create booster message preview embed
+                // Create booster message preview embed (same as guildMemberUpdate event)
                 const boostEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('🚀 Hi, ' + interaction.user + '! Thanks for the boost.')
-                    .setDescription(`Enjoy your special perks ⭐\n\nClaim your Custom Role at 🎪 · custom-role`)
+                    .setTitle('<:FAM_Booster2:1470223709154574427> Hi, ' + interaction.user + '! Thanks for the boost.')
+                    .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at 🎪 · custom-role`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .setTimestamp()
                     .setFooter({ text: `We currently have ${boostCount} boosts` });
