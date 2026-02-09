@@ -355,22 +355,6 @@ const commands = [
                 .setRequired(true))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     new SlashCommandBuilder()
-        .setName('setup-booster-channel')
-        .setDescription('Setup channel for boost thank-you messages (Admin only)')
-        .addChannelOption(option =>
-            option.setName('channel')
-                .setDescription('Channel to send boost messages')
-                .setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-    new SlashCommandBuilder()
-        .setName('setup-logs')
-        .setDescription('Setup moderation logs channel (Admin only)')
-        .addChannelOption(option =>
-            option.setName('channel')
-                .setDescription('Channel for mod logs')
-                .setRequired(true))
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-    new SlashCommandBuilder()
         .setName('timeout')
         .setDescription('Timeout a user for temporary duration (Admin only)')
         .addUserOption(option =>
@@ -1362,77 +1346,6 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        if (commandName === 'setup-booster-channel') {
-            try {
-                const channel = interaction.options.getChannel('channel');
-
-                // Set booster channel untuk guild ini
-                client.boosterConfig[interaction.guildId] = {
-                    ...client.boosterConfig[interaction.guildId],
-                    channelId: channel.id
-                };
-                
-                // Save to file
-                saveBoosterConfig(client.boosterConfig);
-
-                const setupEmbed = new EmbedBuilder()
-                    .setColor('#00FF00')
-                    .setTitle('✅ Booster Channel Setup')
-                    .addFields({
-                        name: 'Channel',
-                        value: `${channel}`,
-                        inline: false
-                    })
-                    .setDescription('Bot akan kirim thank-you message di channel ini saat member boost')
-                    .setTimestamp();
-
-                await interaction.reply({ embeds: [setupEmbed], flags: 64 });
-            } catch (error) {
-                console.error('Error setting up booster channel:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
-
-        if (commandName === 'setup-logs') {
-            try {
-                const channel = interaction.options.getChannel('channel');
-
-                // Set logs channel untuk guild ini
-                client.logsConfig[interaction.guildId] = channel.id;
-                
-                // Save to file
-                saveLogsConfig(client.logsConfig);
-
-                const setupEmbed = new EmbedBuilder()
-                    .setColor('#00FF00')
-                    .setTitle('✅ Moderation Logs Channel Setup')
-                    .addFields({
-                        name: 'Channel',
-                        value: `${channel}`,
-                        inline: false
-                    })
-                    .setDescription('Bot akan log semua moderation actions di channel ini (ban, kick, timeout, mute, dll)')
-                    .setTimestamp();
-
-                // Send ke logs channel
-                await channel.send({ embeds: [setupEmbed] });
-                
-                // Reply ke admin dengan ephemeral
-                await interaction.reply({ 
-                    content: '✅ Logs channel berhasil di-setup!',
-                    flags: 64 
-                });
-            } catch (error) {
-                console.error('Error setting up logs channel:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
 
         if (commandName === 'timeout') {
             try {
