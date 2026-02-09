@@ -1716,10 +1716,9 @@ client.on('interactionCreate', async (interaction) => {
                 const suggestionEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
                     .setAuthor({
-                        name: "",
+                        name: "New Suggestion!",
                         iconURL: "https://i.imgur.com/U76N6jc.png"
                     })
-                    .setTitle('New Suggestion!')
                     .addFields({
                         name: '<:ide:1470352870011306004> Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
