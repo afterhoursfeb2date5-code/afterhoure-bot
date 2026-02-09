@@ -2283,7 +2283,7 @@ client.on('messageCreate', async (message) => {
                             .setTitle('✅ Background Removed!')
                             .setDescription('Background dari gambar kamu sudah dihilangkan!')
                             .setImage(`attachment://${fileName}`)
-                            .setFooter({ text: 'Powered by remove.bg' })
+                            .setFooter({ text: `Request by ${message.author.username}` })
                             .setTimestamp();
 
                         // Delete loading message
