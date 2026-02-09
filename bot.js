@@ -1725,8 +1725,7 @@ client.on('interactionCreate', async (interaction) => {
                         name: '💬 Suggestion:',
                         value: suggestionText,
                         inline: false
-                    })
-                    .setThumbnail('https://i.imgur.com/U76N6jc.png');
+                    });
 
                 // Create suggestion box button (gray color)
                 const suggestionBoxButton = new ButtonBuilder()
