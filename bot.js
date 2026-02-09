@@ -1717,25 +1717,24 @@ client.on('interactionCreate', async (interaction) => {
                     .setColor(0x5865F2)
                     .setTitle('💡 New Suggestion!')
                     .addFields({
-                        name: '👤 Submitter:',
-                        value: `${interaction.user} <@${interaction.user.id}>`,
+                        name: '<:idea:1027120927575654400> Submitter:',
+                        value: `${interaction.user.username} | <@${interaction.user.id}>`,
                         inline: false
                     },
                     {
-                        name: '💬 Suggestion:',
+                        name: '<:suggestion:1184089287755563068> Suggestion:',
                         value: suggestionText,
                         inline: false
                     })
                     .setThumbnail(interaction.user.displayAvatarURL())
-                    .setTimestamp()
-                    .setFooter({ text: 'Suggestion Box' });
+                    .setTimestamp();
 
-                // Create suggestion box button
+                // Create suggestion box button (gray color)
                 const suggestionBoxButton = new ButtonBuilder()
                     .setCustomId('suggestion_box_button')
                     .setLabel('Suggestion Box')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('🎁');
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji('📝');
 
                 const boxRow = new ActionRowBuilder().addComponents(suggestionBoxButton);
 
