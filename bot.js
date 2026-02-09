@@ -1715,7 +1715,7 @@ client.on('interactionCreate', async (interaction) => {
                 // Create suggestion embed
                 const suggestionEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('<:FAM:1470348984399958026> New Suggestion!')
+                    .setTitle('<:FAM_Lamp:1470350609218539633> New Suggestion!')
                     .addFields({
                         name: '👤 Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
