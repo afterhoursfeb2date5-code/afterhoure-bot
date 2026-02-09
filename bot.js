@@ -979,11 +979,10 @@ client.on('interactionCreate', async (interaction) => {
                     messageOptions.files = [attachment.url];
                 }
 
-                let sentMessage;
                 if (replyToId) {
                     try {
                         const messageToReply = await interaction.channel.messages.fetch(replyToId);
-                        sentMessage = await messageToReply.reply(messageOptions);
+                        await messageToReply.reply(messageOptions);
                     } catch (error) {
                         console.error('Error fetching message to reply:', error);
                         return await interaction.reply({ 
@@ -992,10 +991,8 @@ client.on('interactionCreate', async (interaction) => {
                         });
                     }
                 } else {
-                    sentMessage = await interaction.channel.send(messageOptions);
+                    await interaction.channel.send(messageOptions);
                 }
-
-                await interaction.reply({ content: '✅ Message berhasil dikirim!', flags: 64 });
             } catch (error) {
                 console.error('Error sending message:', error);
                 await interaction.reply({ 
