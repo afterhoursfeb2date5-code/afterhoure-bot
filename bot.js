@@ -1715,7 +1715,7 @@ client.on('interactionCreate', async (interaction) => {
                 // Create suggestion embed
                 const suggestionEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('<:logo:1470353877386924220> New Suggestion!')
+                    .setTitle('New Suggestion!')
                     .addFields({
                         name: '<:ide:1470352870011306004> Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
@@ -1733,7 +1733,7 @@ client.on('interactionCreate', async (interaction) => {
                     .setCustomId('suggestion_box_button')
                     .setLabel('Suggestion Box')
                     .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('📝');
+                    .setEmoji('<:isi:1470354854483329190>');
 
                 const boxRow = new ActionRowBuilder().addComponents(suggestionBoxButton);
 
