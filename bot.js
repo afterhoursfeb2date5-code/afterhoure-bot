@@ -1725,7 +1725,8 @@ client.on('interactionCreate', async (interaction) => {
                         name: '💬 Suggestion:',
                         value: suggestionText,
                         inline: false
-                    });
+                    })
+                    .setThumbnail(interaction.user.displayAvatarURL());
 
                 // Create suggestion box button (gray color)
                 const suggestionBoxButton = new ButtonBuilder()
