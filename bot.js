@@ -1966,7 +1966,7 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 // Handle prefix commands & autoresponses
-const PREFIX = 'ma.';
+const PREFIX = 'fam.';
 
 client.on('messageCreate', async (message) => {
     // Ignore bot messages
@@ -1981,12 +1981,12 @@ client.on('messageCreate', async (message) => {
             const args = message.content.slice(PREFIX.length).trim().split(/\s+/);
             const command = args[0].toLowerCase();
 
-            // ma.roleicon [roleID/mention/name]
+            // fam.roleicon [roleID/mention/name]
             if (command === 'roleicon') {
                 try {
                     const roleInput = args.slice(1).join(' ');
                     if (!roleInput) {
-                        return message.reply({ content: '❌ Gunakan: `ma.roleicon [roleID/mention/nama]`\nContoh: Reply ke image → `ma.roleicon @VIP`', flags: 64 });
+                        return message.reply({ content: '❌ Gunakan: `fam.roleicon [roleID/mention/nama]`\nContoh: Reply ke image → `fam.roleicon @VIP`', flags: 64 });
                     }
 
                     let role;
@@ -2057,12 +2057,12 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ma.inrole [roleID/mention/name]
+            // fam.inrole [roleID/mention/name]
             else if (command === 'inrole') {
                 try {
                     const roleInput = args.slice(1).join(' ');
                     if (!roleInput) {
-                        return message.reply({ content: '❌ Gunakan: `ma.inrole [roleID/mention/nama]`\nContoh: `ma.inrole 123456` atau `ma.inrole @VIP` atau `ma.inrole VIP`', flags: 64 });
+                        return message.reply({ content: '❌ Gunakan: `fam.inrole [roleID/mention/nama]`\nContoh: `fam.inrole 123456` atau `fam.inrole @VIP` atau `fam.inrole VIP`', flags: 64 });
                     }
 
                     let role;
@@ -2108,7 +2108,7 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ma.createrole [name] [color1] [color2]
+            // fam.createrole [name] [color1] [color2]
             else if (command === 'createrole') {
                 try {
                     if (!message.member.permissions.has('ManageRoles')) {
@@ -2120,7 +2120,7 @@ client.on('messageCreate', async (message) => {
                     const roleColor2 = args[3] || '#0000FF';
 
                     if (!roleName) {
-                        return message.reply({ content: '❌ Gunakan: `ma.createrole [name] [color1] [color2]`\nContoh: `ma.createrole VIP #FF0000 #0000FF`', flags: 64 });
+                        return message.reply({ content: '❌ Gunakan: `fam.createrole [name] [color1] [color2]`\nContoh: `fam.createrole VIP #FF0000 #0000FF`', flags: 64 });
                     }
 
                     const newRole = await message.guild.roles.create({
@@ -2163,7 +2163,7 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ma.removebg - Remove background from image
+            // fam.removebg - Remove background from image
             else if (command === 'removebg') {
                 try {
                     const REMOVE_BG_API_KEY = process.env.REMOVE_BG_API_KEY;
@@ -2217,7 +2217,7 @@ client.on('messageCreate', async (message) => {
                     }
                     else {
                         return message.reply({ 
-                            content: '❌ Gunakan: `ma.removebg` dengan attachment gambar atau balas ke message dengan gambar!\nContoh: Upload gambar → `ma.removebg`', 
+                            content: '❌ Gunakan: `fam.removebg` dengan attachment gambar atau balas ke message dengan gambar!\nContoh: Upload gambar → `fam.removebg`', 
                             flags: 64 
                         });
                     }
@@ -2299,7 +2299,7 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ma.list - Show all prefix commands
+            // fam.list - Show all prefix commands
             else if (command === 'list') {
                 try {
                     const listEmbed = new EmbedBuilder()
@@ -2308,32 +2308,32 @@ client.on('messageCreate', async (message) => {
                         .setDescription('Semua available prefix commands:')
                         .addFields(
                             { 
-                                name: 'ma.roleicon [ID/mention/nama]', 
-                                value: 'Tampilkan info role dengan berbagai cara input\nContoh: `ma.roleicon @VIP` atau `ma.roleicon VIP`', 
+                                name: 'fam.roleicon [ID/mention/nama]', 
+                                value: 'Tampilkan info role dengan berbagai cara input\nContoh: `fam.roleicon @VIP` atau `fam.roleicon VIP`', 
                                 inline: false 
                             },
                             { 
-                                name: 'ma.inrole [ID/mention/nama]', 
-                                value: 'Tampilkan list members dalam role (max 10)\nContoh: `ma.inrole @VIP` atau `ma.inrole VIP`', 
+                                name: 'fam.inrole [ID/mention/nama]', 
+                                value: 'Tampilkan list members dalam role (max 10)\nContoh: `fam.inrole @VIP` atau `fam.inrole VIP`', 
                                 inline: false 
                             },
                             { 
-                                name: 'ma.createrole [name] [color1] [color2]', 
-                                value: 'Buat role baru dengan gradient\nContoh: `ma.createrole VIP #FF0000 #0000FF`\nPerlu: ManageRoles permission', 
+                                name: 'fam.createrole [name] [color1] [color2]', 
+                                value: 'Buat role baru dengan gradient\nContoh: `fam.createrole VIP #FF0000 #0000FF`\nPerlu: ManageRoles permission', 
                                 inline: false 
                             },
                             { 
-                                name: 'ma.removebg', 
-                                value: 'Remove background dari gambar pakai remove.bg API\nContoh: Upload gambar → `ma.removebg` atau reply ke image → `ma.removebg`', 
+                                name: 'fam.removebg', 
+                                value: 'Remove background dari gambar pakai remove.bg API\nContoh: Upload gambar → `fam.removebg` atau reply ke image → `fam.removebg`', 
                                 inline: false 
                             },
                             { 
-                                name: 'ma.list', 
+                                name: 'fam.list', 
                                 value: 'Tampilkan list semua commands', 
                                 inline: false 
                             }
                         )
-                        .setFooter({ text: 'Gunakan ma.[command] untuk menjalankan command' });
+                        .setFooter({ text: 'Gunakan fam.[command] untuk menjalankan command' });
 
                     await message.reply({ embeds: [listEmbed] });
                 } catch (error) {
