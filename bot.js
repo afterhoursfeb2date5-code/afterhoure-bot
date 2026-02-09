@@ -967,6 +967,9 @@ client.on('interactionCreate', async (interaction) => {
 
         if (commandName === 'admin-say') {
             try {
+                // Defer reply tanpa mengirim message
+                await interaction.deferReply({ ephemeral: true });
+
                 const text = interaction.options.getString('text');
                 const attachment = interaction.options.getAttachment('attachment');
                 const replyToId = interaction.options.getString('reply-to');
@@ -985,19 +988,20 @@ client.on('interactionCreate', async (interaction) => {
                         await messageToReply.reply(messageOptions);
                     } catch (error) {
                         console.error('Error fetching message to reply:', error);
-                        return await interaction.reply({ 
-                            content: '❌ Message ID tidak ditemukan atau sudah dihapus!', 
-                            flags: 64 
+                        return await interaction.editReply({ 
+                            content: '❌ Message ID tidak ditemukan atau sudah dihapus!' 
                         });
                     }
                 } else {
                     await interaction.channel.send(messageOptions);
                 }
+
+                // Edit deferred reply jadi empty (akan langsung hilang)
+                await interaction.editReply({ content: '' });
             } catch (error) {
                 console.error('Error sending message:', error);
-                await interaction.reply({ 
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64 
+                await interaction.editReply({ 
+                    content: `❌ Error: ${error.message}`
                 });
             }
         }
