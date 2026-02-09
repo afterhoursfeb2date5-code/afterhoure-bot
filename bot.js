@@ -1716,7 +1716,7 @@ client.on('interactionCreate', async (interaction) => {
                 const suggestionEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
                     .setAuthor({
-                        name: "",
+                        name: "AFTER HOURS SUGGESTIONS",
                         iconURL: "https://i.imgur.com/U76N6jc.png"
                     })
                     .setTitle('New Suggestion!')
