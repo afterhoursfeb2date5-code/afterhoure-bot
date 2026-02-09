@@ -1717,12 +1717,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setColor(0x5865F2)
                     .setTitle('<a:FAM_Lamp:1470350609218539633> New Suggestion!')
                     .addFields({
-                        name: '👤 Submitter:',
+                        name: '<:suggest:1470352894560698534> Submitter:',
                         value: `${interaction.user.username} | <@${interaction.user.id}>`,
                         inline: false
                     },
                     {
-                        name: '💬 Suggestion:',
+                        name: '<:ide:1470352870011306004> Suggestion:',
                         value: suggestionText,
                         inline: false
                     })
@@ -2419,8 +2419,8 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                 const boostCount = newMember.guild.premiumSubscriptionCount || 0;
                 const boostEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('<:FAM_Booster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
-                    .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
+                    .setTitle('<a:FAM_Booster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
+                    .setDescription(`Enjoy your special perks <a:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
                     .setThumbnail(newMember.user.displayAvatarURL())
                     .setTimestamp()
                     .setFooter({ text: `We currently have ${boostCount} boosts` });
