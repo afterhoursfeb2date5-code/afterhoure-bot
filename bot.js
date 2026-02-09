@@ -2420,7 +2420,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                 const boostEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
                     .setTitle('<:FAM_Booster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
-                    .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at 🎪 · custom-role`)
+                    .setDescription(`Enjoy your special perks <:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
                     .setThumbnail(newMember.user.displayAvatarURL())
                     .setTimestamp()
                     .setFooter({ text: `We currently have ${boostCount} boosts` });
