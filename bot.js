@@ -995,9 +995,6 @@ client.on('interactionCreate', async (interaction) => {
                 } else {
                     await interaction.channel.send(messageOptions);
                 }
-
-                // Edit deferred reply jadi empty (akan langsung hilang)
-                await interaction.editReply({ content: '' });
             } catch (error) {
                 console.error('Error sending message:', error);
                 await interaction.editReply({ 
