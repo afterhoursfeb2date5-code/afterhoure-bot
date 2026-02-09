@@ -1730,25 +1730,19 @@ client.on('interactionCreate', async (interaction) => {
                     .setTimestamp()
                     .setFooter({ text: 'Suggestion Box' });
 
-                // Create vote buttons
-                const upvoteButton = new ButtonBuilder()
-                    .setCustomId(`suggest_upvote_${Date.now()}`)
-                    .setLabel('0')
-                    .setStyle(ButtonStyle.Success)
-                    .setEmoji('✅');
+                // Create suggestion box button
+                const suggestionBoxButton = new ButtonBuilder()
+                    .setCustomId('suggestion_box_button')
+                    .setLabel('Suggestion Box')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('🎁');
 
-                const downvoteButton = new ButtonBuilder()
-                    .setCustomId(`suggest_downvote_${Date.now()}`)
-                    .setLabel('0')
-                    .setStyle(ButtonStyle.Danger)
-                    .setEmoji('❌');
-
-                const buttonRow = new ActionRowBuilder().addComponents(upvoteButton, downvoteButton);
+                const boxRow = new ActionRowBuilder().addComponents(suggestionBoxButton);
 
                 // Send to suggestions channel
                 await suggestionsChannel.send({
                     embeds: [suggestionEmbed],
-                    components: [buttonRow]
+                    components: [boxRow]
                 });
 
                 // Reply to user
@@ -1811,6 +1805,31 @@ client.on('interactionCreate', async (interaction) => {
                 });
             } catch (error) {
                 console.error('Error cancelling embed:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (interaction.customId === 'suggestion_box_button') {
+            try {
+                const modal = new ModalBuilder()
+                    .setCustomId('suggestion_modal')
+                    .setTitle('New Suggestion');
+
+                const textInput = new TextInputBuilder()
+                    .setCustomId('suggestion_text')
+                    .setLabel('Tuliskan saran dan masukan')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true);
+
+                const actionRow = new ActionRowBuilder().addComponents(textInput);
+                modal.addComponents(actionRow);
+
+                await interaction.showModal(modal);
+            } catch (error) {
+                console.error('Error showing suggestion modal:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
