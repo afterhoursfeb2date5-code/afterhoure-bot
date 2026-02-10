@@ -236,45 +236,56 @@ function saveIntro(userId, introData) {
 // Generate intro image
 async function generateIntroImage(userData) {
     try {
-        const canvas = createCanvas(600, 350);
+        const canvas = createCanvas(800, 500);
         const ctx = canvas.getContext('2d');
 
-        // Background
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, 600, 350);
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 800, 500);
+        gradient.addColorStop(0, '#0f0f1e');
+        gradient.addColorStop(1, '#1a1a2e');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 800, 500);
 
-        // Border
+        // Main border
         ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(10, 10, 580, 330);
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, 20, 760, 460);
 
         // Title
         ctx.fillStyle = '#00d9ff';
-        ctx.font = 'bold 28px Arial';
-        ctx.fillText('MEMBER INTRODUCTION', 30, 50);
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('MEMBER INTRODUCTION', 50, 70);
 
-        // Profile box background
-        ctx.fillStyle = '#16213e';
-        ctx.fillRect(320, 70, 250, 250);
+        // Divider line
         ctx.strokeStyle = '#00d9ff';
         ctx.lineWidth = 1;
-        ctx.strokeRect(320, 70, 250, 250);
+        ctx.beginPath();
+        ctx.moveTo(50, 90);
+        ctx.lineTo(750, 90);
+        ctx.stroke();
 
-        // Avatar placeholder (circle)
+        // Profile section box
+        ctx.fillStyle = 'rgba(22, 33, 62, 0.5)';
+        ctx.fillRect(550, 110, 200, 350);
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(550, 110, 200, 350);
+
+        // Avatar circle
         ctx.fillStyle = '#00d9ff';
         ctx.beginPath();
-        ctx.arc(470, 120, 35, 0, Math.PI * 2);
+        ctx.arc(650, 180, 50, 0, Math.PI * 2);
         ctx.fill();
 
-        // Avatar text (first letter)
-        ctx.fillStyle = '#1a1a2e';
-        ctx.font = 'bold 20px Arial';
+        // Avatar letter
+        ctx.fillStyle = '#0f0f1e';
+        ctx.font = 'bold 40px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 470, 128);
-        ctx.textAlign = 'left';
+        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 650, 195);
 
-        // User info
-        const labels = [
+        // User info fields
+        const fields = [
             { label: 'NAMA', value: userData.nama },
             { label: 'UMUR', value: userData.umur },
             { label: 'GENDER', value: userData.gender },
@@ -282,29 +293,35 @@ async function generateIntroImage(userData) {
             { label: 'TENTANG KAMU', value: userData.tentang }
         ];
 
-        let yPos = 80;
-        ctx.font = '14px Arial';
+        let yPos = 130;
+        ctx.textAlign = 'left';
 
-        for (const item of labels) {
+        for (const field of fields) {
             // Label
-            ctx.fillStyle = '#888888';
-            ctx.font = 'bold 12px Arial';
-            ctx.fillText(item.label, 30, yPos);
+            ctx.fillStyle = '#00d9ff';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText(field.label, 70, yPos);
 
             // Value
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '13px Arial';
-            let displayValue = item.value.length > 35 ? item.value.substring(0, 35) + '...' : item.value;
-            ctx.fillText(displayValue, 30, yPos + 18);
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '16px Arial';
+            
+            // Handle text wrapping for long values
+            let displayValue = field.value;
+            if (displayValue.length > 40) {
+                displayValue = displayValue.substring(0, 40) + '...';
+            }
+            
+            ctx.fillText(displayValue, 70, yPos + 28);
 
-            yPos += 50;
+            yPos += 70;
         }
 
         // Footer
-        ctx.fillStyle = '#888888';
-        ctx.font = '10px Arial';
+        ctx.fillStyle = '#666666';
+        ctx.font = '12px Arial';
         ctx.textAlign = 'right';
-        ctx.fillText('𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬', 570, 330);
+        ctx.fillText('UNDERCOVER BESTIE', 750, 475);
 
         return canvas.toBuffer('image/png');
     } catch (error) {
@@ -2010,19 +2027,10 @@ client.on('interactionCreate', async (interaction) => {
                 // Send to intro channel
                 const introChannel = interaction.guild.channels.cache.get(HARDCODED_INTRO_CHANNEL_ID);
                 if (introChannel) {
-                    const attachment = new AttachmentBuilder(imageBuffer, { name: 'introduction.png' });
+                    const attachment = new AttachmentBuilder(imageBuffer, { name: `${interaction.user.username}-intro.png` });
                     
-                    const introEmbed = new EmbedBuilder()
-                        .setColor('#00d9ff')
-                        .setAuthor({
-                            name: `${interaction.user.username}'s Introduction`,
-                            iconURL: interaction.user.displayAvatarURL()
-                        })
-                        .setImage('attachment://introduction.png')
-                        .setTimestamp();
-
                     await introChannel.send({
-                        embeds: [introEmbed],
+                        content: `🎉 **${interaction.user.username}'s Introduction**`,
                         files: [attachment]
                     });
                 }
