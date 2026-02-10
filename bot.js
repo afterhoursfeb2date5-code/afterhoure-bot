@@ -273,7 +273,7 @@ async function generateIntroImage(userData) {
       height: 550px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 40px 75px 40px 75px;
+            padding: 30px 90px 30px 90px;
             display: flex;
             gap: 40px;
             position: relative;
@@ -354,6 +354,7 @@ async function generateIntroImage(userData) {
       font-size: 12px;
       opacity: 0.6;
       letter-spacing: 1px;
+      display: none;
     }
     </style>
     </head>
