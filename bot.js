@@ -258,7 +258,7 @@ async function generateIntroImage(userData) {
     body {
       margin: 0;
       width: 1200px;
-      height: 600px;
+      height: 350px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
@@ -269,11 +269,11 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 1050px;
-      height: 550px;
+      width: 1200px;
+      height: 320px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 30px 90px 30px 90px;
+            padding: 15px 80px 15px 80px;
             display: flex;
             gap: 40px;
             position: relative;
@@ -283,10 +283,10 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 35px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 36px;
+      font-size: 28px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
@@ -312,7 +312,7 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 65px;
+            margin-top: 20px;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -374,7 +374,6 @@ async function generateIntroImage(userData) {
         <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
         </div>
 
-        <div class="footer">After Hours</div>
     </div>
     </body>
     </html>
@@ -418,7 +417,7 @@ async function generateIntroImage(userData) {
         });
 
         const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 600 });
+        await page.setViewport({ width: 1200, height: 350 });
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
 
         // Take screenshot
