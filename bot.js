@@ -1491,7 +1491,8 @@ client.on('interactionCreate', async (interaction) => {
 
                 await interaction.reply({
                     content: '📋 Pilih kategori umur kamu terlebih dahulu:',
-                    components: [row]
+                    components: [row],
+                    flags: 64
                 });
             } catch (error) {
                 console.error('Error showing age select:', error);
@@ -1652,28 +1653,29 @@ client.on('interactionCreate', async (interaction) => {
                 const tempData = client._introTemp.get(interaction.user.id) || {};
                 const age = tempData.age === '18plus' ? '18+' : '18-';
 
-                // Create introduction embed
+                // Create introduction embed dengan design fancy
                 const introEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('📣 New Introduction!')
+                    .setTitle(`✨ ${name}`)
+                    .setDescription(`Halo! Selamat datang 👋`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
-                        { name: 'Name', value: name, inline: true },
-                        { name: 'Age Category', value: age, inline: true },
-                        { name: 'Hobby', value: hobby, inline: false },
-                        { name: 'About', value: about, inline: false }
+                        { name: '👤 Nama', value: name, inline: true },
+                        { name: '🎂 Umur', value: age, inline: true },
+                        { name: '⭐ Hobby', value: hobby, inline: false },
+                        { name: '📝 Tentang Saya', value: about, inline: false }
                     )
-                    .setFooter({ text: `Submitted by ${interaction.user.username}` })
+                    .setFooter({ text: `Intro dari ${interaction.user.username} • ${new Date().toLocaleDateString('id-ID')}` })
                     .setTimestamp();
 
-                // Create introduction button for others to see profile
-                const viewButton = new ButtonBuilder()
-                    .setCustomId(`view_intro_${interaction.user.id}`)
+                // Create introduction button for starting intro process
+                const introButton = new ButtonBuilder()
+                    .setCustomId('start_intro_button')
                     .setLabel('Introduction')
-                    .setStyle(ButtonStyle.Primary)
+                    .setStyle(ButtonStyle.Secondary)
                     .setEmoji('📣');
 
-                const row = new ActionRowBuilder().addComponents(viewButton);
+                const row = new ActionRowBuilder().addComponents(introButton);
 
                 // Send to introduction channel
                 const introChannelId = '1468647406253117551'; // Ganti dengan channel ID intro kamu
@@ -1777,7 +1779,41 @@ client.on('interactionCreate', async (interaction) => {
 
 
 
-        // Handle view introduction profile buttons
+        // Handle Introduction button - trigger age selection & form
+        if (interaction.customId === 'start_intro_button') {
+            try {
+                // Create age select menu - langsung tampil saat button diklik
+                const ageSelect = new StringSelectMenuBuilder()
+                    .setCustomId('intro_age_select')
+                    .setPlaceholder('Pilih kategori umur')
+                    .addOptions(
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18+')
+                            .setValue('18plus')
+                            .setDescription('18 tahun ke atas'),
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18-')
+                            .setValue('18minus')
+                            .setDescription('Di bawah 18 tahun')
+                    );
+
+                const row = new ActionRowBuilder().addComponents(ageSelect);
+
+                await interaction.reply({
+                    content: '📋 Pilih kategori umur kamu terlebih dahulu:',
+                    components: [row],
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error showing age select from button:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        // Handle view introduction profile buttons (deprecated - replaced by start_intro_button)
         if (interaction.customId.startsWith('view_intro_')) {
             try {
                 const userId = interaction.customId.replace('view_intro_', '');
@@ -1793,15 +1829,16 @@ client.on('interactionCreate', async (interaction) => {
 
                 const profileEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle(`${intro.name}'s Profile`)
+                    .setTitle(`✨ ${intro.name}`)
+                    .setDescription(`Halo! Selamat datang 👋`)
                     .setThumbnail(intro.avatar)
                     .addFields(
-                        { name: '👤 Name', value: intro.name, inline: true },
-                        { name: '📅 Age Category', value: intro.age, inline: true },
-                        { name: '🎮 Hobby', value: intro.hobby, inline: false },
-                        { name: '📝 About', value: intro.about, inline: false }
+                        { name: '👤 Nama', value: intro.name, inline: true },
+                        { name: '🎂 Umur', value: intro.age, inline: true },
+                        { name: '⭐ Hobby', value: intro.hobby, inline: false },
+                        { name: '📝 Tentang Saya', value: intro.about, inline: false }
                     )
-                    .setFooter({ text: `Discord: @${intro.username}` })
+                    .setFooter({ text: `Intro dari ${intro.username} • ${new Date(intro.submittedAt).toLocaleDateString('id-ID')}` })
                     .setTimestamp(new Date(intro.submittedAt));
 
                 await interaction.reply({
