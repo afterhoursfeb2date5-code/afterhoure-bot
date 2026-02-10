@@ -273,7 +273,7 @@ async function generateIntroImage(userData) {
             height: 440px;
             border-radius: 18px;
             border: 2px solid rgba(109,40,217,0.18);
-            padding: 28px 48px;
+            padding: 56px 48px 28px;
             display: flex;
             gap: 32px;
             position: relative;
@@ -287,14 +287,15 @@ async function generateIntroImage(userData) {
             top: 18px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 44px;
+            font-size: 40px;
             font-weight: 800;
             letter-spacing: 2px;
             color: #e6d8ff;
             text-transform: uppercase;
-            padding-bottom: 8px;
-            border-bottom: 4px solid rgba(183,150,255,0.08);
-            width: 520px;
+            padding-bottom: 6px;
+            border-bottom: 3px solid rgba(183,150,255,0.08);
+            width: auto;
+            white-space: nowrap;
             text-align: center;
         }
 
@@ -333,7 +334,7 @@ async function generateIntroImage(userData) {
 
         .info {
             flex: 1;
-            margin-top: 28px;
+            margin-top: 24px;
             display: flex;
             flex-direction: column;
             gap: 18px;
