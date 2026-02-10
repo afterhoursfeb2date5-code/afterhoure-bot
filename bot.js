@@ -253,6 +253,10 @@ async function generateIntroImage(userData) {
         const canvas = createCanvas(1000, 500);
         const ctx = canvas.getContext('2d');
 
+        // Set antialias dan text properties
+        ctx.antialias = 'gray';
+        ctx.textDrawingMode = 'path';
+
         // Background gradient
         const backgroundGradient = ctx.createLinearGradient(0, 0, 1000, 500);
         backgroundGradient.addColorStop(0, '#0f0f1e');
@@ -268,11 +272,18 @@ async function generateIntroImage(userData) {
         // Title bar background
         ctx.fillStyle = '#1a1f3a';
         ctx.fillRect(20, 20, 960, 80);
+        
+        // Title
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 48px Arial, sans-serif';
+        ctx.font = '48px Arial';
+        ctx.fontStyle = 'bold';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText('MEMBER INTRODUCTION', 50, 60);
+        try {
+            ctx.fillText('MEMBER INTRODUCTION', 50, 60);
+        } catch (e) {
+            console.warn('⚠️ Title text rendering failed:', e.message);
+        }
 
         // Content area
         const contentStartY = 120;
@@ -301,7 +312,7 @@ async function generateIntroImage(userData) {
                 ctx.stroke();
             }
         } catch (err) {
-            console.warn('⚠️ Could not load avatar image, using placeholder:', err.message);
+            console.warn('⚠️ Avatar loading failed:', err.message);
             // Fallback: solid circle with initials
             ctx.fillStyle = '#ff006e';
             ctx.beginPath();
@@ -310,17 +321,21 @@ async function generateIntroImage(userData) {
 
             // Initials
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 60px Arial, sans-serif';
+            ctx.font = '60px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(nama.charAt(0).toUpperCase(), avatarX + avatarSize / 2, avatarY + avatarSize / 2);
+            try {
+                ctx.fillText(nama.charAt(0).toUpperCase(), avatarX + avatarSize / 2, avatarY + avatarSize / 2);
+            } catch (e) {
+                console.warn('⚠️ Initial text rendering failed');
+            }
         }
 
         // Info fields - right side
         const infoStartX = 350;
         const fieldLabelWidth = 100;
         let currentY = contentStartY + 40;
-        const lineSpacing = 80;
+        const lineSpacing = 75;
 
         const fields = [
             { label: 'NAME', value: truncateText(nama, 40) },
@@ -330,29 +345,38 @@ async function generateIntroImage(userData) {
         ];
 
         for (const field of fields) {
-            // Label (cyan)
-            ctx.fillStyle = '#00d9ff';
-            ctx.font = 'bold 16px Arial, sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(field.label, infoStartX, currentY);
+            try {
+                // Label (cyan)
+                ctx.fillStyle = '#00d9ff';
+                ctx.font = '16px Arial';
+                ctx.fontStyle = 'bold';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(field.label, infoStartX, currentY);
 
-            // Value (white)
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '18px Arial, sans-serif';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(field.value, infoStartX + fieldLabelWidth + 20, currentY);
+                // Value (white)
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '18px Arial';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(field.value, infoStartX + fieldLabelWidth + 20, currentY);
+            } catch (e) {
+                console.warn(`⚠️ Field "${field.label}" rendering failed:`, e.message);
+            }
 
             currentY += lineSpacing;
         }
 
         // Footer
-        ctx.fillStyle = '#666666';
-        ctx.font = '12px Arial, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText('UNDERCOVER BESTIE • El Gato', 950, 485);
+        try {
+            ctx.fillStyle = '#666666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('UNDERCOVER BESTIE - El Gato', 950, 485);
+        } catch (e) {
+            console.warn('⚠️ Footer rendering failed');
+        }
 
         return canvas.toBuffer('image/png');
     } catch (error) {
