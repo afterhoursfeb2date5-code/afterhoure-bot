@@ -271,26 +271,28 @@ async function generateIntroImage(userData) {
     .card {
       width: 900px;
       height: 450px;
-      border-radius: 20px;
+      border-radius: 22px;
       border: 2px solid rgba(138,90,255,0.35);
       padding: 40px 50px;
       display: flex;
       gap: 40px;
       position: relative;
       overflow: hidden;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0,0,0,0.25);
+      box-shadow: 0 0 80px rgba(138,90,255,0.15);
     }
 
     /* TITLE */
     .title {
       position: absolute;
-      top: 20px;
+      top: 22px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 34px;
+      font-size: 30px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #d9c8ff;
+      white-space: nowrap;
     }
 
     .title::after {
@@ -316,6 +318,7 @@ async function generateIntroImage(userData) {
       overflow: hidden;
       border: 3px solid #8a5aff;
       box-shadow: 0 0 25px rgba(138,90,255,0.6);
+      background: #000;
     }
 
     .avatar img {
@@ -324,35 +327,35 @@ async function generateIntroImage(userData) {
       object-fit: cover;
     }
 
-    /* crosshair */
-    .avatar-wrapper::before,
-    .avatar-wrapper::after {
+    /* CROSSHAIR */
+    .avatar-wrapper::before {
       content: '';
       position: absolute;
+      width: 2px;
+      height: 120px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       background: #8a5aff;
       opacity: 0.6;
     }
 
-    .avatar-wrapper::before {
-      width: 2px;
-      height: 220px;
-      left: 50%;
-      top: -25px;
-      transform: translateX(-50%);
-    }
-
     .avatar-wrapper::after {
+      content: '';
+      position: absolute;
       height: 2px;
-      width: 220px;
+      width: 120px;
+      left: 50%;
       top: 50%;
-      left: -25px;
-      transform: translateY(-50%);
+      transform: translate(-50%, -50%);
+      background: #8a5aff;
+      opacity: 0.6;
     }
 
     /* INFO */
     .info {
       flex: 1;
-      margin-top: 100px;
+      margin-top: 85px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -379,6 +382,10 @@ async function generateIntroImage(userData) {
       border-radius: 10px;
       border: 1px solid rgba(138,90,255,0.25);
       font-size: 17px;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* FOOTER */
@@ -410,7 +417,7 @@ async function generateIntroImage(userData) {
       <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
     </div>
 
-    <div class="footer">UNDERCOVER BESTIE</div>
+    <div class="footer">AFTER HOURS</div>
   </div>
 </body>
 </html>
