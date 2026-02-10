@@ -236,99 +236,127 @@ function saveIntro(userId, introData) {
 // Generate intro image
 async function generateIntroImage(userData) {
     try {
-        const canvas = createCanvas(900, 550);
+        // Validate data
+        const nama = String(userData.nama || 'Unknown').trim() || 'Unknown';
+        const umur = String(userData.umur || '?').trim() || '?';
+        const gender = String(userData.gender || 'N/A').trim() || 'N/A';
+        const hobby = String(userData.hobby || 'N/A').trim() || 'N/A';
+
+        // Truncate helper
+        const truncateText = (text, maxLength) => {
+            if (text.length > maxLength) {
+                return text.substring(0, maxLength) + '...';
+            }
+            return text;
+        };
+
+        const canvas = createCanvas(1000, 500);
         const ctx = canvas.getContext('2d');
 
-        // Background
-        ctx.fillStyle = '#0a0e27';
-        ctx.fillRect(0, 0, 900, 550);
+        // Background gradient
+        const backgroundGradient = ctx.createLinearGradient(0, 0, 1000, 500);
+        backgroundGradient.addColorStop(0, '#0f0f1e');
+        backgroundGradient.addColorStop(1, '#1a1a2e');
+        ctx.fillStyle = backgroundGradient;
+        ctx.fillRect(0, 0, 1000, 500);
 
-        // Main container with border
-        ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(30, 30, 840, 490);
+        // Main border
+        ctx.strokeStyle = '#ff006e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, 20, 960, 460);
 
-        // Inner padding container
-        ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(50, 50, 800, 450);
-
-        // Title background bar
+        // Title bar background
         ctx.fillStyle = '#1a1f3a';
-        ctx.fillRect(50, 50, 800, 70);
-        ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(50, 50, 800, 70);
-
-        // Title
-        ctx.fillStyle = '#00d9ff';
-        ctx.font = 'bold 36px sans-serif';
+        ctx.fillRect(20, 20, 960, 80);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Arial, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText('MEMBER INTRODUCTION', 80, 85);
+        ctx.fillText('MEMBER INTRODUCTION', 50, 60);
 
-        // Avatar section background
-        ctx.fillStyle = '#1a1f3a';
-        ctx.fillRect(650, 140, 180, 340);
+        // Content area
+        const contentStartY = 120;
+        const avatarX = 80;
+        const avatarY = contentStartY + 80;
+        const avatarSize = 160;
 
-        // Avatar circle
-        ctx.fillStyle = '#00d9ff';
-        ctx.beginPath();
-        ctx.arc(740, 210, 40, 0, Math.PI * 2);
-        ctx.fill();
+        // Load and draw avatar
+        try {
+            if (userData.avatarUrl) {
+                const avatarImage = await loadImage(userData.avatarUrl);
+                
+                // Create circular mask for avatar
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(avatarImage, avatarX, avatarY, avatarSize, avatarSize);
+                ctx.restore();
 
-        // Avatar letter
-        ctx.fillStyle = '#0a0e27';
-        ctx.font = 'bold 32px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 740, 210);
+                // Avatar border
+                ctx.strokeStyle = '#ff006e';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        } catch (err) {
+            console.warn('⚠️ Could not load avatar image, using placeholder:', err.message);
+            // Fallback: solid circle with initials
+            ctx.fillStyle = '#ff006e';
+            ctx.beginPath();
+            ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+            ctx.fill();
 
-        // Info fields
-        const infoX = 80;
-        let infoY = 140;
-        const lineHeight = 70;
+            // Initials
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 60px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(nama.charAt(0).toUpperCase(), avatarX + avatarSize / 2, avatarY + avatarSize / 2);
+        }
+
+        // Info fields - right side
+        const infoStartX = 350;
+        const fieldLabelWidth = 100;
+        let currentY = contentStartY + 40;
+        const lineSpacing = 80;
 
         const fields = [
-            { label: 'NAMA', value: userData.nama },
-            { label: 'UMUR', value: userData.umur },
-            { label: 'GENDER', value: userData.gender },
-            { label: 'HOBBY', value: userData.hobby },
-            { label: 'TENTANG', value: userData.tentang }
+            { label: 'NAME', value: truncateText(nama, 40) },
+            { label: 'AGE', value: truncateText(umur, 40) },
+            { label: 'GENDER', value: truncateText(gender, 40) },
+            { label: 'HOBBY', value: truncateText(hobby, 40) }
         ];
 
         for (const field of fields) {
-            // Label
+            // Label (cyan)
             ctx.fillStyle = '#00d9ff';
-            ctx.font = 'bold 13px sans-serif';
+            ctx.font = 'bold 16px Arial, sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
-            ctx.fillText(field.label, infoX, infoY);
+            ctx.fillText(field.label, infoStartX, currentY);
 
-            // Value
+            // Value (white)
             ctx.fillStyle = '#ffffff';
-            ctx.font = '14px sans-serif';
+            ctx.font = '18px Arial, sans-serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'top';
-            
-            let value = field.value.substring(0, 45);
-            if (field.value.length > 45) value += '...';
-            
-            ctx.fillText(value, infoX + 120, infoY);
+            ctx.fillText(field.value, infoStartX + fieldLabelWidth + 20, currentY);
 
-            infoY += lineHeight;
+            currentY += lineSpacing;
         }
 
         // Footer
         ctx.fillStyle = '#666666';
-        ctx.font = '11px sans-serif';
+        ctx.font = '12px Arial, sans-serif';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('UNDERCOVER BESTIE • El Gato', 820, 530);
+        ctx.fillText('UNDERCOVER BESTIE • El Gato', 950, 485);
 
         return canvas.toBuffer('image/png');
     } catch (error) {
-        console.error('Error generating intro image:', error);
+        console.error('❌ Error generating intro image:', error.message);
         throw error;
     }
 }
@@ -1988,72 +2016,95 @@ client.on('interactionCreate', async (interaction) => {
 
         if (interaction.customId === 'intro_modal') {
             try {
-                const nama = interaction.fields.getTextInputValue('intro_nama');
-                const gender = interaction.fields.getTextInputValue('intro_gender');
-                const hobby = interaction.fields.getTextInputValue('intro_hobby');
-                const tentang = interaction.fields.getTextInputValue('intro_tentang');
+                const nama = interaction.fields.getTextInputValue('intro_nama')?.trim();
+                const gender = interaction.fields.getTextInputValue('intro_gender')?.trim();
+                const hobby = interaction.fields.getTextInputValue('intro_hobby')?.trim();
                 
-                // Get stored umur value
-                const umur = client.introUmurSelections?.get(interaction.user.id) || 'Tidak dipilih';
-                client.introUmurSelections?.delete(interaction.user.id);
-
-                if (umur === 'Tidak dipilih') {
+                // Validate inputs
+                if (!nama || !gender || !hobby) {
                     return await interaction.reply({
-                        content: '❌ Kamu belum memilih rentang umur!',
+                        content: '❌ All fields are required! Tolong isi semua field.',
                         flags: 64
                     });
                 }
 
-                // Generate intro image
-                const imageBuffer = await generateIntroImage({
-                    nama,
-                    umur,
-                    gender,
-                    hobby,
-                    tentang
-                });
-
-                // Save intro data
-                const introData = {
-                    userId: interaction.user.id,
-                    username: interaction.user.username,
-                    nama,
-                    umur,
-                    gender,
-                    hobby,
-                    tentang,
-                    createdAt: new Date().toISOString(),
-                    avatar: interaction.user.displayAvatarURL()
-                };
-                saveIntro(interaction.user.id, introData);
-
-                // Send to intro channel
-                const introChannel = interaction.guild.channels.cache.get(HARDCODED_INTRO_CHANNEL_ID);
-                if (introChannel) {
-                    const attachment = new AttachmentBuilder(imageBuffer, { name: `${interaction.user.username}-intro.png` });
-                    
-                    await introChannel.send({
-                        content: `🎉 **${interaction.user.username}'s Introduction**`,
-                        files: [attachment]
+                // Get stored umur value
+                const umur = client.introUmurSelections?.get(interaction.user.id) || 'Tidak dipilih';
+                
+                if (umur === 'Tidak dipilih') {
+                    client.introUmurSelections?.delete(interaction.user.id);
+                    return await interaction.reply({
+                        content: '❌ Kamu belum memilih rentang umur! Ulangi dari awal dengan /intro',
+                        flags: 64
                     });
                 }
 
-                // Reply to user
-                const reply = await interaction.reply({
-                    content: '✅ Introduction berhasil dikirim! Terima kasih sudah memperkenalkan diri! 🎉',
-                    flags: 64
-                });
+                client.introUmurSelections?.delete(interaction.user.id);
 
-                setTimeout(() => {
-                    reply.delete().catch(() => {});
-                }, 3000);
+                // Defer reply karena generate image bisa lama
+                await interaction.deferReply({ flags: 64 });
+
+                try {
+                    // Generate intro image with avatar
+                    const imageBuffer = await generateIntroImage({
+                        nama,
+                        umur,
+                        gender,
+                        hobby,
+                        avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: 256 })
+                    });
+
+                    // Save intro data
+                    const introData = {
+                        userId: interaction.user.id,
+                        username: interaction.user.username,
+                        nama,
+                        umur,
+                        gender,
+                        hobby,
+                        createdAt: new Date().toISOString(),
+                        avatar: interaction.user.displayAvatarURL()
+                    };
+                    saveIntro(interaction.user.id, introData);
+
+                    // Send to intro channel
+                    const introChannel = interaction.guild.channels.cache.get(HARDCODED_INTRO_CHANNEL_ID);
+                    if (introChannel) {
+                        const attachment = new AttachmentBuilder(imageBuffer, { name: `${interaction.user.username}-intro.png` });
+                        
+                        try {
+                            await introChannel.send({
+                                content: `🎉 **${interaction.user.username}'s Introduction**`,
+                                files: [attachment]
+                            });
+                            console.log(`✅ Intro image sent to channel for user ${interaction.user.tag}`);
+                        } catch (channelError) {
+                            console.error('Error sending to intro channel:', channelError);
+                            throw new Error(`Cannot send to intro channel: ${channelError.message}`);
+                        }
+                    } else {
+                        console.error('Intro channel not found:', HARDCODED_INTRO_CHANNEL_ID);
+                        throw new Error(`Intro channel not found (ID: ${HARDCODED_INTRO_CHANNEL_ID})`);
+                    }
+
+                    // Reply to user
+                    await interaction.editReply({
+                        content: '✅ Introduction berhasil dikirim! Terima kasih sudah memperkenalkan diri! 🎉'
+                    });
+
+                } catch (generateError) {
+                    console.error('❌ Error in intro processing:', generateError);
+                    await interaction.editReply({
+                        content: `❌ Error saat process intro: ${generateError.message}\n\nCoba refresh dan ulangi.`
+                    });
+                }
 
             } catch (error) {
-                console.error('Error processing intro:', error);
+                console.error('❌ Error handling intro modal:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
-                });
+                }).catch(() => {});
             }
         }
     }
@@ -2175,19 +2226,11 @@ client.on('interactionCreate', async (interaction) => {
                     .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
                     .setRequired(true);
 
-                const tentangInput = new TextInputBuilder()
-                    .setCustomId('intro_tentang')
-                    .setLabel('Tentang Kamu')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setPlaceholder('Ceritakan sedikit tentang diri kamu')
-                    .setRequired(true);
-
                 const row1 = new ActionRowBuilder().addComponents(namaInput);
                 const row2 = new ActionRowBuilder().addComponents(genderInput);
                 const row3 = new ActionRowBuilder().addComponents(hobbyInput);
-                const row4 = new ActionRowBuilder().addComponents(tentangInput);
 
-                modal.addComponents(row1, row2, row3, row4);
+                modal.addComponents(row1, row2, row3);
 
                 await interaction.showModal(modal);
                 
