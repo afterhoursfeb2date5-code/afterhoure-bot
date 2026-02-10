@@ -268,11 +268,12 @@ async function generateIntroImage(userData) {
       width: 100%;
       height: 100%;
       border-radius: 20px;
-      border: 2px solid rgba(138,90,255,0.4);
-      padding: 40px;
-      display: flex;
-      gap: 40px;
-      position: relative;
+            border: 2px solid rgba(109,40,217,0.25);
+            padding: 48px 48px 36px 48px;
+            display: flex;
+            gap: 36px;
+            position: relative;
+            align-items: flex-start;
     }
 
     .title {
@@ -287,13 +288,13 @@ async function generateIntroImage(userData) {
     }
 
     .avatar {
-      width: 180px;
-      height: 180px;
-      border-radius: 50%;
-      border: 4px solid #8a5aff;
-      overflow: hidden;
-      margin-top: 80px;
-      box-shadow: 0 0 25px #8a5aff;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid rgba(255,255,255,0.06);
+            margin-top: 60px;
+            box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
     }
 
     .avatar img {
@@ -303,29 +304,34 @@ async function generateIntroImage(userData) {
     }
 
     .info {
-      flex: 1;
-      margin-top: 90px;
+            flex: 1;
+            margin-top: 48px;
     }
 
     .row {
       display: flex;
-      margin-bottom: 18px;
+            margin-bottom: 20px;
       align-items: center;
     }
 
-    .label {
-      width: 140px;
-      color: #bda9ff;
-      font-weight: 600;
-    }
+        .label {
+            width: 160px;
+            color: #bda9ff;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
 
-    .value {
-      flex: 1;
-      background: rgba(255,255,255,0.05);
-      padding: 10px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(138,90,255,0.3);
-    }
+        .value {
+            flex: 1;
+            background: rgba(255,255,255,0.03);
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.03);
+            color: #ffffff;
+            font-size: 18px;
+        }
 
     .footer {
       position: absolute;
@@ -353,7 +359,7 @@ async function generateIntroImage(userData) {
       <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
     </div>
 
-    <div class="footer">UNDERCOVER BESTIE</div>
+    <div class="footer">After Hours</div>
   </div>
 </body>
 </html>
