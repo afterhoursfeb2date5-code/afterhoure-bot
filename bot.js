@@ -257,7 +257,7 @@ async function generateIntroImage(userData) {
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      width: 1200px;
+      width: 600px;
       height: 450px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
@@ -269,11 +269,11 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 1150px;
-      height: 400px;
+      width: 1050px;
+      height: 550px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 20px 100px 20px 100px;
+            padding: 30px 90px 30px 90px;
             display: flex;
             gap: 40px;
             position: relative;
