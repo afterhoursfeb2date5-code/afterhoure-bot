@@ -1787,20 +1787,9 @@ client.on('interactionCreate', async (interaction) => {
 
         if (commandName === 'intro') {
             try {
-                const modal = new ModalBuilder()
-                    .setCustomId('intro_modal')
-                    .setTitle('Member Introduction');
-
-                const namaInput = new TextInputBuilder()
-                    .setCustomId('intro_nama')
-                    .setLabel('Nama Lengkap')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Masukkan nama kamu')
-                    .setRequired(true);
-
                 const umurSelect = new StringSelectMenuBuilder()
                     .setCustomId('intro_umur_select')
-                    .setPlaceholder('Pilih rentang umur')
+                    .setPlaceholder('Pilih rentang umur kamu')
                     .addOptions([
                         {
                             label: '18+',
@@ -1812,52 +1801,21 @@ client.on('interactionCreate', async (interaction) => {
                         }
                     ]);
 
-                const genderInput = new TextInputBuilder()
-                    .setCustomId('intro_gender')
-                    .setLabel('Gender')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Contoh: Pria, Wanita, Lainnya')
-                    .setRequired(true);
+                const row = new ActionRowBuilder().addComponents(umurSelect);
 
-                const hobbyInput = new TextInputBuilder()
-                    .setCustomId('intro_hobby')
-                    .setLabel('Hobby')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
-                    .setRequired(true);
-
-                const tentangInput = new TextInputBuilder()
-                    .setCustomId('intro_tentang')
-                    .setLabel('Tentang Kamu')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setPlaceholder('Ceritakan sedikit tentang diri kamu')
-                    .setRequired(true);
-
-                const row1 = new ActionRowBuilder().addComponents(namaInput);
-                const row2 = new ActionRowBuilder().addComponents(genderInput);
-                const row3 = new ActionRowBuilder().addComponents(hobbyInput);
-                const row4 = new ActionRowBuilder().addComponents(tentangInput);
-
-                modal.addComponents(row1, row2, row3, row4);
-
-                // Store umur selection temporarily
+                // Initialize storage
                 if (!client.introUmurSelections) {
                     client.introUmurSelections = new Map();
                 }
 
-                // Show modal
-                await interaction.showModal(modal);
-
-                // Send follow-up message for umur selection
-                await interaction.followUp({
-                    content: 'ℹ️ Sebelum submit introduction, kamu perlu pilih umur di bawah ini:',
-                    components: [new ActionRowBuilder().addComponents(umurSelect)],
-                    flags: 64,
-                    ephemeral: true
-                }).catch(() => {});
+                await interaction.reply({
+                    content: '📋 **Member Introduction**\n\nPilih rentang umur kamu terlebih dahulu:',
+                    components: [row],
+                    flags: 64
+                });
 
             } catch (error) {
-                console.error('Error showing intro modal:', error);
+                console.error('Error showing intro umur selection:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
@@ -2180,10 +2138,47 @@ client.on('interactionCreate', async (interaction) => {
                 
                 client.introUmurSelections.set(interaction.user.id, selectedUmur);
                 
-                await interaction.reply({
-                    content: `✅ Umur "${selectedUmur}" sudah dipilih! Sekarang isikan form lainnya di modal.`,
-                    flags: 64
-                });
+                // Create and show modal
+                const modal = new ModalBuilder()
+                    .setCustomId('intro_modal')
+                    .setTitle('Member Introduction');
+
+                const namaInput = new TextInputBuilder()
+                    .setCustomId('intro_nama')
+                    .setLabel('Nama Lengkap')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Masukkan nama kamu')
+                    .setRequired(true);
+
+                const genderInput = new TextInputBuilder()
+                    .setCustomId('intro_gender')
+                    .setLabel('Gender')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Contoh: Pria, Wanita, Lainnya')
+                    .setRequired(true);
+
+                const hobbyInput = new TextInputBuilder()
+                    .setCustomId('intro_hobby')
+                    .setLabel('Hobby')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
+                    .setRequired(true);
+
+                const tentangInput = new TextInputBuilder()
+                    .setCustomId('intro_tentang')
+                    .setLabel('Tentang Kamu')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setPlaceholder('Ceritakan sedikit tentang diri kamu')
+                    .setRequired(true);
+
+                const row1 = new ActionRowBuilder().addComponents(namaInput);
+                const row2 = new ActionRowBuilder().addComponents(genderInput);
+                const row3 = new ActionRowBuilder().addComponents(hobbyInput);
+                const row4 = new ActionRowBuilder().addComponents(tentangInput);
+
+                modal.addComponents(row1, row2, row3, row4);
+
+                await interaction.showModal(modal);
                 
                 return;
             }
