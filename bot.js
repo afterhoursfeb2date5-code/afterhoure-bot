@@ -258,7 +258,7 @@ async function generateIntroImage(userData) {
     body {
       margin: 0;
       width: 1200px;
-      height: 350px;
+      height: 300px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
@@ -270,12 +270,12 @@ async function generateIntroImage(userData) {
 
     .card {
       width: 1200px;
-      height: 320px;
+      height: 280px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 15px 80px 15px 80px;
+            padding: 10px 40px 10px 40px;
             display: flex;
-            gap: 40px;
+            gap: 30px;
             position: relative;
             align-items: center;
             overflow: hidden;
@@ -294,8 +294,8 @@ async function generateIntroImage(userData) {
     }
 
     .avatar {
-            width: 170px;
-            height: 170px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
@@ -312,10 +312,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 20px;
+            margin-top: 0;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
     }
 
     .row {
@@ -337,11 +337,11 @@ async function generateIntroImage(userData) {
         .value {
             flex: 1;
             background: rgba(255,255,255,0.03);
-            padding: 12px 16px;
+            padding: 8px 12px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 18px;
+            font-size: 14px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -417,7 +417,7 @@ async function generateIntroImage(userData) {
         });
 
         const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 350 });
+        await page.setViewport({ width: 1200, height: 300 });
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
 
         // Take screenshot
