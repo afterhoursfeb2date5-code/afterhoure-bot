@@ -257,26 +257,28 @@ async function generateIntroImage(userData) {
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      width: 1000px;
-      height: 500px;
+      width: 1200px;
+      height: 600px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 0;
     }
 
     .card {
       width: 900px;
-      height: 420px;
+      height: 450px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 40px 48px 36px 48px;
+            padding: 35px 45px 35px 45px;
             display: flex;
-            gap: 32px;
+            gap: 28px;
             position: relative;
             align-items: flex-start;
+            overflow: hidden;
     }
 
     .title {
@@ -308,13 +310,17 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 48px;
+            margin-top: 35px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
     }
 
     .row {
       display: flex;
-            margin-bottom: 20px;
+            margin-bottom: 0;
       align-items: center;
+      flex-shrink: 0;
     }
 
         .label {
@@ -329,11 +335,14 @@ async function generateIntroImage(userData) {
         .value {
             flex: 1;
             background: rgba(255,255,255,0.03);
-            padding: 12px 18px;
-            border-radius: 10px;
+            padding: 10px 16px;
+            border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 20px;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
     .footer {
