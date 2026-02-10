@@ -269,13 +269,13 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 1000px;
-      height: 520px;
+      width: 850px;
+      height: 420px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 40px 50px 40px 50px;
+            padding: 35px 45px 35px 45px;
             display: flex;
-            gap: 35px;
+            gap: 32px;
             position: relative;
             align-items: center;
             overflow: hidden;
@@ -283,18 +283,18 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 30px;
+      top: 25px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 34px;
+      font-size: 32px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
     }
 
     .avatar {
-            width: 160px;
-            height: 160px;
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
@@ -311,10 +311,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 65px;
+            margin-top: 45px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 15px;
     }
 
     .row {
@@ -325,22 +325,22 @@ async function generateIntroImage(userData) {
     }
 
         .label {
-            width: 160px;
+            width: 140px;
             color: #bda9ff;
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
-            font-size: 16px;
+            font-size: 15px;
         }
 
         .value {
             flex: 1;
             background: rgba(255,255,255,0.03);
-            padding: 10px 16px;
+            padding: 10px 14px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 18px;
+            font-size: 17px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
