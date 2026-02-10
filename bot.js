@@ -255,6 +255,7 @@ async function generateIntroImage(userData) {
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       width: 1200px;
@@ -265,42 +266,56 @@ async function generateIntroImage(userData) {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 0;
     }
 
     .card {
-      width: 850px;
-      height: 420px;
+      width: 900px;
+      height: 450px;
       border-radius: 20px;
-            border: 2px solid rgba(109,40,217,0.25);
-            padding: 35px 45px 35px 45px;
-            display: flex;
-            gap: 32px;
-            position: relative;
-            align-items: center;
-            overflow: hidden;
+      border: 2px solid rgba(138,90,255,0.35);
+      padding: 40px 50px;
+      display: flex;
+      gap: 40px;
+      position: relative;
+      overflow: hidden;
+      background: rgba(0,0,0,0.2);
     }
 
+    /* TITLE */
     .title {
       position: absolute;
-      top: 25px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 700;
       letter-spacing: 2px;
-      color: #cdbaff;
+      color: #d9c8ff;
+    }
+
+    .title::after {
+      content: '';
+      display: block;
+      width: 220px;
+      height: 2px;
+      background: #8a5aff;
+      margin: 6px auto 0;
+      border-radius: 2px;
+    }
+
+    /* AVATAR */
+    .avatar-wrapper {
+      position: relative;
+      margin-top: 80px;
     }
 
     .avatar {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid rgba(255,255,255,0.06);
-            margin-top: 0;
-            flex-shrink: 0;
-            box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid #8a5aff;
+      box-shadow: 0 0 25px rgba(138,90,255,0.6);
     }
 
     .avatar img {
@@ -309,43 +324,64 @@ async function generateIntroImage(userData) {
       object-fit: cover;
     }
 
+    /* crosshair */
+    .avatar-wrapper::before,
+    .avatar-wrapper::after {
+      content: '';
+      position: absolute;
+      background: #8a5aff;
+      opacity: 0.6;
+    }
+
+    .avatar-wrapper::before {
+      width: 2px;
+      height: 220px;
+      left: 50%;
+      top: -25px;
+      transform: translateX(-50%);
+    }
+
+    .avatar-wrapper::after {
+      height: 2px;
+      width: 220px;
+      top: 50%;
+      left: -25px;
+      transform: translateY(-50%);
+    }
+
+    /* INFO */
     .info {
-            flex: 1;
-            margin-top: 45px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+      flex: 1;
+      margin-top: 100px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .row {
       display: flex;
-            margin-bottom: 0;
       align-items: center;
-      flex-shrink: 0;
     }
 
-        .label {
-            width: 140px;
-            color: #bda9ff;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 15px;
-        }
+    .label {
+      width: 130px;
+      color: #bda9ff;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-size: 15px;
+    }
 
-        .value {
-            flex: 1;
-            background: rgba(255,255,255,0.03);
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.03);
-            color: #ffffff;
-            font-size: 17px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    .value {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(138,90,255,0.25);
+      font-size: 17px;
+    }
 
+    /* FOOTER */
     .footer {
       position: absolute;
       bottom: 15px;
@@ -360,8 +396,10 @@ async function generateIntroImage(userData) {
   <div class="card">
     <div class="title">MEMBER INTRODUCTION</div>
 
-    <div class="avatar">
-      <img src="{{AVATAR}}">
+    <div class="avatar-wrapper">
+      <div class="avatar">
+        <img src="{{AVATAR}}">
+      </div>
     </div>
 
     <div class="info">
@@ -372,7 +410,7 @@ async function generateIntroImage(userData) {
       <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
     </div>
 
-    <div class="footer">After Hours</div>
+    <div class="footer">UNDERCOVER BESTIE</div>
   </div>
 </body>
 </html>
