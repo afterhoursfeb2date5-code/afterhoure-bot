@@ -257,8 +257,8 @@ async function generateIntroImage(userData) {
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      width: 600px;
-      height: 450px;
+      width: 1200px;
+      height: 600px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
@@ -374,6 +374,7 @@ async function generateIntroImage(userData) {
         <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
         </div>
 
+        <div class="footer">After Hours</div>
     </div>
     </body>
     </html>
@@ -417,7 +418,7 @@ async function generateIntroImage(userData) {
         });
 
         const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 450 });
+        await page.setViewport({ width: 1200, height: 600 });
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
 
         // Take screenshot
