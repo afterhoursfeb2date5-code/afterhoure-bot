@@ -283,25 +283,29 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 35px;
+      top: 25px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 36px;
+      font-size: 40px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
       white-space: nowrap;
+      border-bottom: 2px solid rgba(205, 186, 255, 0.4);
+      padding-bottom: 10px;
+      width: 100%;
+      text-align: center;
     }
 
     .avatar {
-            width: 170px;
-            height: 170px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             overflow: hidden;
-            border: 3px solid rgba(255,255,255,0.06);
+            border: 4px solid rgba(205, 186, 255, 0.5);
             margin-top: 0;
             flex-shrink: 0;
-            box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
+            box-shadow: 0 0 20px rgba(205, 186, 255, 0.3), inset 0 6px 18px rgba(0,0,0,0.6);
     }
 
     .avatar img {
@@ -312,10 +316,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 65px;
+            margin-top: 50px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
     }
 
     .row {
@@ -336,12 +340,13 @@ async function generateIntroImage(userData) {
 
         .value {
             flex: 1;
-            background: rgba(255,255,255,0.03);
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.03);
+            background: transparent;
+            padding: 0 0 0 20px;
+            border-radius: 0;
+            border: 0;
             color: #ffffff;
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: 400;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
