@@ -110,14 +110,21 @@ const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
 const AUTO_RESPONSES_FILE = path.join(CONFIG_DIR, 'autoresponses.json');
+const INTROS_FILE = path.join(CONFIG_DIR, 'intros.json');
+const INTROS_IMAGES_DIR = path.join(__dirname, 'intro-images');
 
 // Hardcoded Channel IDs
 const HARDCODED_BOOSTER_CHANNEL_ID = '1468793035042062531';
 const HARDCODED_LOGS_CHANNEL_ID = '1470227456396103859';
+const HARDCODED_INTRO_CHANNEL_ID = '1468647406253117551';
 
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(INTROS_IMAGES_DIR)) {
+    fs.mkdirSync(INTROS_IMAGES_DIR, { recursive: true });
 }
 
 // Load configs
@@ -201,6 +208,108 @@ function saveAutoResponses(autoResponses) {
         fs.writeFileSync(AUTO_RESPONSES_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
         console.error('Error saving auto-responses:', error);
+    }
+}
+
+function loadIntros() {
+    try {
+        if (fs.existsSync(INTROS_FILE)) {
+            return JSON.parse(fs.readFileSync(INTROS_FILE, 'utf8'));
+        }
+        return {};
+    } catch (error) {
+        console.error('Error loading intros:', error);
+        return {};
+    }
+}
+
+function saveIntro(userId, introData) {
+    try {
+        const intros = loadIntros();
+        intros[userId] = introData;
+        fs.writeFileSync(INTROS_FILE, JSON.stringify(intros, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving intro:', error);
+    }
+}
+
+// Generate intro image
+async function generateIntroImage(userData) {
+    try {
+        const canvas = createCanvas(600, 350);
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, 600, 350);
+
+        // Border
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(10, 10, 580, 330);
+
+        // Title
+        ctx.fillStyle = '#00d9ff';
+        ctx.font = 'bold 28px Arial';
+        ctx.fillText('MEMBER INTRODUCTION', 30, 50);
+
+        // Profile box background
+        ctx.fillStyle = '#16213e';
+        ctx.fillRect(320, 70, 250, 250);
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(320, 70, 250, 250);
+
+        // Avatar placeholder (circle)
+        ctx.fillStyle = '#00d9ff';
+        ctx.beginPath();
+        ctx.arc(470, 120, 35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Avatar text (first letter)
+        ctx.fillStyle = '#1a1a2e';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 470, 128);
+        ctx.textAlign = 'left';
+
+        // User info
+        const labels = [
+            { label: 'NAMA', value: userData.nama },
+            { label: 'UMUR', value: userData.umur },
+            { label: 'GENDER', value: userData.gender },
+            { label: 'HOBBY', value: userData.hobby },
+            { label: 'TENTANG KAMU', value: userData.tentang }
+        ];
+
+        let yPos = 80;
+        ctx.font = '14px Arial';
+
+        for (const item of labels) {
+            // Label
+            ctx.fillStyle = '#888888';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(item.label, 30, yPos);
+
+            // Value
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '13px Arial';
+            let displayValue = item.value.length > 35 ? item.value.substring(0, 35) + '...' : item.value;
+            ctx.fillText(displayValue, 30, yPos + 18);
+
+            yPos += 50;
+        }
+
+        // Footer
+        ctx.fillStyle = '#888888';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬', 570, 330);
+
+        return canvas.toBuffer('image/png');
+    } catch (error) {
+        console.error('Error generating intro image:', error);
+        throw error;
     }
 }
 
@@ -452,6 +561,9 @@ const commands = [
     new SlashCommandBuilder()
         .setName('suggest')
         .setDescription('Submit a suggestion to the server'),
+    new SlashCommandBuilder()
+        .setName('intro')
+        .setDescription('Submit your member introduction'),
     new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
@@ -1673,6 +1785,86 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'intro') {
+            try {
+                const modal = new ModalBuilder()
+                    .setCustomId('intro_modal')
+                    .setTitle('Member Introduction');
+
+                const namaInput = new TextInputBuilder()
+                    .setCustomId('intro_nama')
+                    .setLabel('Nama Lengkap')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Masukkan nama kamu')
+                    .setRequired(true);
+
+                const umurSelect = new StringSelectMenuBuilder()
+                    .setCustomId('intro_umur_select')
+                    .setPlaceholder('Pilih rentang umur')
+                    .addOptions([
+                        {
+                            label: '18+',
+                            value: '18+'
+                        },
+                        {
+                            label: '18-',
+                            value: '18-'
+                        }
+                    ]);
+
+                const genderInput = new TextInputBuilder()
+                    .setCustomId('intro_gender')
+                    .setLabel('Gender')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Contoh: Pria, Wanita, Lainnya')
+                    .setRequired(true);
+
+                const hobbyInput = new TextInputBuilder()
+                    .setCustomId('intro_hobby')
+                    .setLabel('Hobby')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
+                    .setRequired(true);
+
+                const tentangInput = new TextInputBuilder()
+                    .setCustomId('intro_tentang')
+                    .setLabel('Tentang Kamu')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setPlaceholder('Ceritakan sedikit tentang diri kamu')
+                    .setRequired(true);
+
+                const row1 = new ActionRowBuilder().addComponents(namaInput);
+                const row2 = new ActionRowBuilder().addComponents(genderInput);
+                const row3 = new ActionRowBuilder().addComponents(hobbyInput);
+                const row4 = new ActionRowBuilder().addComponents(tentangInput);
+
+                modal.addComponents(row1, row2, row3, row4);
+
+                // Store umur selection temporarily
+                if (!client.introUmurSelections) {
+                    client.introUmurSelections = new Map();
+                }
+
+                // Show modal
+                await interaction.showModal(modal);
+
+                // Send follow-up message for umur selection
+                await interaction.followUp({
+                    content: 'ℹ️ Sebelum submit introduction, kamu perlu pilih umur di bawah ini:',
+                    components: [new ActionRowBuilder().addComponents(umurSelect)],
+                    flags: 64,
+                    ephemeral: true
+                }).catch(() => {});
+
+            } catch (error) {
+                console.error('Error showing intro modal:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
 
 
     }
@@ -1815,6 +2007,86 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
         }
+
+        if (interaction.customId === 'intro_modal') {
+            try {
+                const nama = interaction.fields.getTextInputValue('intro_nama');
+                const gender = interaction.fields.getTextInputValue('intro_gender');
+                const hobby = interaction.fields.getTextInputValue('intro_hobby');
+                const tentang = interaction.fields.getTextInputValue('intro_tentang');
+                
+                // Get stored umur value
+                const umur = client.introUmurSelections?.get(interaction.user.id) || 'Tidak dipilih';
+                client.introUmurSelections?.delete(interaction.user.id);
+
+                if (umur === 'Tidak dipilih') {
+                    return await interaction.reply({
+                        content: '❌ Kamu belum memilih rentang umur!',
+                        flags: 64
+                    });
+                }
+
+                // Generate intro image
+                const imageBuffer = await generateIntroImage({
+                    nama,
+                    umur,
+                    gender,
+                    hobby,
+                    tentang
+                });
+
+                // Save intro data
+                const introData = {
+                    userId: interaction.user.id,
+                    username: interaction.user.username,
+                    nama,
+                    umur,
+                    gender,
+                    hobby,
+                    tentang,
+                    createdAt: new Date().toISOString(),
+                    avatar: interaction.user.displayAvatarURL()
+                };
+                saveIntro(interaction.user.id, introData);
+
+                // Send to intro channel
+                const introChannel = interaction.guild.channels.cache.get(HARDCODED_INTRO_CHANNEL_ID);
+                if (introChannel) {
+                    const attachment = new AttachmentBuilder(imageBuffer, { name: 'introduction.png' });
+                    
+                    const introEmbed = new EmbedBuilder()
+                        .setColor('#00d9ff')
+                        .setAuthor({
+                            name: `${interaction.user.username}'s Introduction`,
+                            iconURL: interaction.user.displayAvatarURL()
+                        })
+                        .setImage('attachment://introduction.png')
+                        .setTimestamp();
+
+                    await introChannel.send({
+                        embeds: [introEmbed],
+                        files: [attachment]
+                    });
+                }
+
+                // Reply to user
+                const reply = await interaction.reply({
+                    content: '✅ Introduction berhasil dikirim! Terima kasih sudah memperkenalkan diri! 🎉',
+                    flags: 64
+                });
+
+                setTimeout(() => {
+                    reply.delete().catch(() => {});
+                }, 3000);
+
+            } catch (error) {
+                console.error('Error processing intro:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
     }
 
     if (interaction.isButton()) {
@@ -1898,6 +2170,24 @@ client.on('interactionCreate', async (interaction) => {
     // Handle string select menus
     if (interaction.isStringSelectMenu()) {
         try {
+            // Handle intro umur selection
+            if (interaction.customId === 'intro_umur_select') {
+                const selectedUmur = interaction.values[0];
+                
+                if (!client.introUmurSelections) {
+                    client.introUmurSelections = new Map();
+                }
+                
+                client.introUmurSelections.set(interaction.user.id, selectedUmur);
+                
+                await interaction.reply({
+                    content: `✅ Umur "${selectedUmur}" sudah dipilih! Sekarang isikan form lainnya di modal.`,
+                    flags: 64
+                });
+                
+                return;
+            }
+
             const selectedValues = interaction.values;
             const member = interaction.member;
 
