@@ -236,92 +236,95 @@ function saveIntro(userId, introData) {
 // Generate intro image
 async function generateIntroImage(userData) {
     try {
-        const canvas = createCanvas(800, 500);
+        const canvas = createCanvas(900, 550);
         const ctx = canvas.getContext('2d');
 
-        // Background gradient
-        const gradient = ctx.createLinearGradient(0, 0, 800, 500);
-        gradient.addColorStop(0, '#0f0f1e');
-        gradient.addColorStop(1, '#1a1a2e');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 800, 500);
+        // Background
+        ctx.fillStyle = '#0a0e27';
+        ctx.fillRect(0, 0, 900, 550);
 
-        // Main border
+        // Main container with border
         ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(20, 20, 760, 460);
+        ctx.lineWidth = 4;
+        ctx.strokeRect(30, 30, 840, 490);
+
+        // Inner padding container
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(50, 50, 800, 450);
+
+        // Title background bar
+        ctx.fillStyle = '#1a1f3a';
+        ctx.fillRect(50, 50, 800, 70);
+        ctx.strokeStyle = '#00d9ff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(50, 50, 800, 70);
 
         // Title
         ctx.fillStyle = '#00d9ff';
-        ctx.font = 'bold 40px Arial';
+        ctx.font = 'bold 36px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('MEMBER INTRODUCTION', 50, 70);
+        ctx.textBaseline = 'middle';
+        ctx.fillText('MEMBER INTRODUCTION', 80, 85);
 
-        // Divider line
-        ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(50, 90);
-        ctx.lineTo(750, 90);
-        ctx.stroke();
-
-        // Profile section box
-        ctx.fillStyle = 'rgba(22, 33, 62, 0.5)';
-        ctx.fillRect(550, 110, 200, 350);
-        ctx.strokeStyle = '#00d9ff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(550, 110, 200, 350);
+        // Avatar section background
+        ctx.fillStyle = '#1a1f3a';
+        ctx.fillRect(650, 140, 180, 340);
 
         // Avatar circle
         ctx.fillStyle = '#00d9ff';
         ctx.beginPath();
-        ctx.arc(650, 180, 50, 0, Math.PI * 2);
+        ctx.arc(740, 210, 40, 0, Math.PI * 2);
         ctx.fill();
 
         // Avatar letter
-        ctx.fillStyle = '#0f0f1e';
-        ctx.font = 'bold 40px Arial';
+        ctx.fillStyle = '#0a0e27';
+        ctx.font = 'bold 32px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 650, 195);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(userData.nama.charAt(0).toUpperCase(), 740, 210);
 
-        // User info fields
+        // Info fields
+        const infoX = 80;
+        let infoY = 140;
+        const lineHeight = 70;
+
         const fields = [
             { label: 'NAMA', value: userData.nama },
             { label: 'UMUR', value: userData.umur },
             { label: 'GENDER', value: userData.gender },
             { label: 'HOBBY', value: userData.hobby },
-            { label: 'TENTANG KAMU', value: userData.tentang }
+            { label: 'TENTANG', value: userData.tentang }
         ];
-
-        let yPos = 130;
-        ctx.textAlign = 'left';
 
         for (const field of fields) {
             // Label
             ctx.fillStyle = '#00d9ff';
-            ctx.font = 'bold 14px Arial';
-            ctx.fillText(field.label, 70, yPos);
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(field.label, infoX, infoY);
 
             // Value
-            ctx.fillStyle = '#e0e0e0';
-            ctx.font = '16px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
             
-            // Handle text wrapping for long values
-            let displayValue = field.value;
-            if (displayValue.length > 40) {
-                displayValue = displayValue.substring(0, 40) + '...';
-            }
+            let value = field.value.substring(0, 45);
+            if (field.value.length > 45) value += '...';
             
-            ctx.fillText(displayValue, 70, yPos + 28);
+            ctx.fillText(value, infoX + 120, infoY);
 
-            yPos += 70;
+            infoY += lineHeight;
         }
 
         // Footer
         ctx.fillStyle = '#666666';
-        ctx.font = '12px Arial';
+        ctx.font = '11px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText('UNDERCOVER BESTIE', 750, 475);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('UNDERCOVER BESTIE • El Gato', 820, 530);
 
         return canvas.toBuffer('image/png');
     } catch (error) {
