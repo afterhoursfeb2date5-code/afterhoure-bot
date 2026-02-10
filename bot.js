@@ -1653,19 +1653,21 @@ client.on('interactionCreate', async (interaction) => {
                 const tempData = client._introTemp.get(interaction.user.id) || {};
                 const age = tempData.age === '18plus' ? '18+' : '18-';
 
-                // Create introduction embed dengan design fancy
+                // Create introduction embed matching Python example appearance
+                const colorDark = 0x2D2D41; // rgb(45,45,65)
+                const dateStr = new Date().toLocaleDateString('en-GB'); // dd/mm/YYYY
                 const introEmbed = new EmbedBuilder()
-                    .setColor(0x5865F2)
+                    .setColor(colorDark)
                     .setTitle(`✨ ${name}`)
-                    .setDescription(`Halo! Selamat datang 👋`)
+                    .setDescription(`Halo! Selamat datang di ${interaction.guild.name} 👋`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
-                        { name: '👤 Nama', value: name, inline: true },
-                        { name: '🎂 Umur', value: age, inline: true },
-                        { name: '⭐ Hobby', value: hobby, inline: false },
-                        { name: '📝 Tentang Saya', value: about, inline: false }
+                        { name: '👤 Nama', value: `\`\`\`${name}\`\`\``, inline: true },
+                        { name: '🎂 Umur', value: `\`\`\`${age}\`\`\``, inline: true },
+                        { name: '🎮 Hobby', value: `\`\`\`${hobby}\`\`\``, inline: false },
+                        { name: '📝 Tentang Saya', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
                     )
-                    .setFooter({ text: `Intro dari ${interaction.user.username} • ${new Date().toLocaleDateString('id-ID')}` })
+                    .setFooter({ text: `Intro dari ${interaction.user.username} • ${dateStr}`, iconURL: interaction.user.displayAvatarURL() })
                     .setTimestamp();
 
                 // Create introduction button for starting intro process
@@ -1827,18 +1829,19 @@ client.on('interactionCreate', async (interaction) => {
                     });
                 }
 
+                const dateStrProfile = new Date(intro.submittedAt).toLocaleDateString('en-GB');
                 const profileEmbed = new EmbedBuilder()
-                    .setColor(0x5865F2)
+                    .setColor(colorDark)
                     .setTitle(`✨ ${intro.name}`)
                     .setDescription(`Halo! Selamat datang 👋`)
                     .setThumbnail(intro.avatar)
                     .addFields(
-                        { name: '👤 Nama', value: intro.name, inline: true },
-                        { name: '🎂 Umur', value: intro.age, inline: true },
-                        { name: '⭐ Hobby', value: intro.hobby, inline: false },
-                        { name: '📝 Tentang Saya', value: intro.about, inline: false }
+                        { name: '👤 Nama', value: `\`\`\`${intro.name}\`\`\``, inline: true },
+                        { name: '🎂 Umur', value: `\`\`\`${intro.age}\`\`\``, inline: true },
+                        { name: '🎮 Hobby', value: `\`\`\`${intro.hobby}\`\`\``, inline: false },
+                        { name: '📝 Tentang Saya', value: `\`\`\`${intro.about || '-'}\`\`\``, inline: false }
                     )
-                    .setFooter({ text: `Intro dari ${intro.username} • ${new Date(intro.submittedAt).toLocaleDateString('id-ID')}` })
+                    .setFooter({ text: `Intro dari ${intro.username} • ${dateStrProfile}`, iconURL: intro.avatar })
                     .setTimestamp(new Date(intro.submittedAt));
 
                 await interaction.reply({
