@@ -270,7 +270,7 @@ async function generateIntroImage(userData) {
 
     .card {
       width: 1050px;
-      height: 550px;
+      height: 480px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
             padding: 30px 90px 30px 90px;
