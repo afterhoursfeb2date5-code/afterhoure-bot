@@ -1472,23 +1472,29 @@ client.on('interactionCreate', async (interaction) => {
 
         if (commandName === 'introduction') {
             try {
-                const introEmbed = new EmbedBuilder()
-                    .setTitle('Introduce Yourself')
-                    .setDescription('Klik tombol di bawah untuk mengisi introduction form!')
-                    .setColor(0x5865F2)
-                    .setFooter({ text: 'Fields: Name, Age (18+/18-), Hobby, About You' });
+                // Create age select menu - langsung tampil saat command dijalankan
+                const ageSelect = new StringSelectMenuBuilder()
+                    .setCustomId('intro_age_select')
+                    .setPlaceholder('Pilih kategori umur')
+                    .addOptions(
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18+')
+                            .setValue('18plus')
+                            .setDescription('18 tahun ke atas'),
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18-')
+                            .setValue('18minus')
+                            .setDescription('Di bawah 18 tahun')
+                    );
 
-                const introButton = new ButtonBuilder()
-                    .setCustomId('open_intro_modal')
-                    .setLabel('Introduce Yourself')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('📣');
+                const row = new ActionRowBuilder().addComponents(ageSelect);
 
-                const row = new ActionRowBuilder().addComponents(introButton);
-
-                await interaction.reply({ embeds: [introEmbed], components: [row] });
+                await interaction.reply({
+                    content: '📋 Pilih kategori umur kamu terlebih dahulu:',
+                    components: [row]
+                });
             } catch (error) {
-                console.error('Error showing introduction message:', error);
+                console.error('Error showing age select:', error);
                 await interaction.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
             }
         }
@@ -1660,12 +1666,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setFooter({ text: `Submitted by ${interaction.user.username}` })
                     .setTimestamp();
 
-                // Create view profile button
+                // Create introduction button for others to see profile
                 const viewButton = new ButtonBuilder()
                     .setCustomId(`view_intro_${interaction.user.id}`)
-                    .setLabel('View Profile')
+                    .setLabel('Introduction')
                     .setStyle(ButtonStyle.Primary)
-                    .setEmoji('👤');
+                    .setEmoji('📣');
 
                 const row = new ActionRowBuilder().addComponents(viewButton);
 
@@ -1769,38 +1775,7 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        if (interaction.customId === 'open_intro_modal') {
-            try {
-                // Create age select menu
-                const ageSelect = new StringSelectMenuBuilder()
-                    .setCustomId('intro_age_select')
-                    .setPlaceholder('Pilih kategori umur')
-                    .addOptions(
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('18+')
-                            .setValue('18plus')
-                            .setDescription('18 tahun ke atas'),
-                        new StringSelectMenuOptionBuilder()
-                            .setLabel('18-')
-                            .setValue('18minus')
-                            .setDescription('Di bawah 18 tahun')
-                    );
 
-                const row = new ActionRowBuilder().addComponents(ageSelect);
-
-                await interaction.reply({
-                    content: '📋 Pilih kategori umur kamu terlebih dahulu:',
-                    components: [row],
-                    flags: 64
-                });
-            } catch (error) {
-                console.error('Error showing age select:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
 
         // Handle view introduction profile buttons
         if (interaction.customId.startsWith('view_intro_')) {
