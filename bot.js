@@ -248,171 +248,116 @@ async function generateIntroImage(userData) {
 
         // HTML/CSS template
         const htmlTemplate = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                
-                body {
-                    width: 1200px;
-                    height: 600px;
-                    background: linear-gradient(135deg, #0a0a15 0%, #0f0f1e 50%, #1a1a2e 100%);
-                    font-family: 'Segoe UI', 'Arial', sans-serif;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .container {
-                    width: 1140px;
-                    height: 540px;
-                    background: rgba(10, 10, 25, 0.8);
-                    border: 3px solid #6d28d9;
-                    border-radius: 25px;
-                    padding: 50px;
-                    display: flex;
-                    gap: 80px;
-                    align-items: flex-start;
-                    box-shadow: 0 0 50px rgba(109, 40, 217, 0.3), inset 0 0 20px rgba(109, 40, 217, 0.1);
-                }
-                
-                .title {
-                    position: absolute;
-                    top: 35px;
-                    left: 0;
-                    right: 0;
-                    text-align: center;
-                    color: #ffffff;
-                    font-size: 52px;
-                    font-weight: 800;
-                    letter-spacing: 3px;
-                    padding-bottom: 25px;
-                    border-bottom: 3px solid #6d28d9;
-                    width: 92%;
-                    margin: 0 auto;
-                }
-                
-                .content {
-                    display: flex;
-                    gap: 100px;
-                    width: 100%;
-                    margin-top: 90px;
-                }
-                
-                .avatar-section {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 20px;
-                    flex-shrink: 0;
-                }
-                
-                .avatar {
-                    width: 240px;
-                    height: 240px;
-                    border-radius: 50%;
-                    overflow: hidden;
-                    border: 5px solid #ff0066;
-                    box-shadow: 
-                        0 0 40px rgba(255, 0, 102, 0.6),
-                        0 0 80px rgba(255, 0, 102, 0.3),
-                        inset 0 0 20px rgba(255, 255, 255, 0.1);
-                    background: linear-gradient(135deg, #ff0066, #ff6600);
-                    position: relative;
-                }
-                
-                .avatar img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    display: block;
-                }
-                
-                .info-section {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 45px;
-                    padding-top: 10px;
-                }
-                
-                .info-field {
-                    display: flex;
-                    gap: 50px;
-                    align-items: center;
-                }
-                
-                .field-label {
-                    color: #b4a3ff;
-                    font-size: 19px;
-                    font-weight: 700;
-                    min-width: 130px;
-                    letter-spacing: 1.5px;
-                    text-transform: uppercase;
-                }
-                
-                .field-value {
-                    color: #ffffff;
-                    font-size: 20px;
-                    font-weight: 500;
-                    letter-spacing: 0.5px;
-                }
-                
-                .footer {
-                    position: absolute;
-                    bottom: 28px;
-                    right: 50px;
-                    color: #808080;
-                    font-size: 13px;
-                    letter-spacing: 5px;
-                    font-weight: 400;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="title">MEMBER INTRODUCTION</div>
-            <div class="container">
-                <div class="content">
-                    <div class="avatar-section">
-                        <div class="avatar">
-                            <img src="${avatarUrl}" alt="Avatar">
-                        </div>
-                    </div>
-                    
-                    <div class="info-section">
-                        <div class="info-field">
-                            <div class="field-label">NAME</div>
-                            <div class="field-value">${nama}</div>
-                        </div>
-                        <div class="info-field">
-                            <div class="field-label">AGE</div>
-                            <div class="field-value">${umur}</div>
-                        </div>
-                        <div class="info-field">
-                            <div class="field-label">GENDER</div>
-                            <div class="field-value">${gender}</div>
-                        </div>
-                        <div class="info-field">
-                            <div class="field-label">CITY</div>
-                            <div class="field-value">${city}</div>
-                        </div>
-                        <div class="info-field">
-                            <div class="field-label">HOBBY</div>
-                            <div class="field-value">${hobby}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="footer">𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐬</div>
-            </div>
-        </body>
-        </html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 1000px;
+      height: 500px;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #1b1530, #0a0815);
+      color: #fff;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      border: 2px solid rgba(138,90,255,0.4);
+      padding: 40px;
+      display: flex;
+      gap: 40px;
+      position: relative;
+    }
+
+    .title {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #cdbaff;
+    }
+
+    .avatar {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 4px solid #8a5aff;
+      overflow: hidden;
+      margin-top: 80px;
+      box-shadow: 0 0 25px #8a5aff;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .info {
+      flex: 1;
+      margin-top: 90px;
+    }
+
+    .row {
+      display: flex;
+      margin-bottom: 18px;
+      align-items: center;
+    }
+
+    .label {
+      width: 140px;
+      color: #bda9ff;
+      font-weight: 600;
+    }
+
+    .value {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid rgba(138,90,255,0.3);
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15px;
+      right: 30px;
+      font-size: 12px;
+      opacity: 0.6;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="title">MEMBER INTRODUCTION</div>
+
+    <div class="avatar">
+      <img src="{{AVATAR}}">
+    </div>
+
+    <div class="info">
+      <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
+      <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
+      <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
+      <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
+      <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
+    </div>
+
+    <div class="footer">UNDERCOVER BESTIE</div>
+  </div>
+</body>
+</html>
+
         `;
 
         // Launch browser
