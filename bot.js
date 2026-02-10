@@ -5,6 +5,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { createCanvas, loadImage, registerFont } = require('canvas');
+const puppeteer = require('puppeteer');
 require('dotenv').config();
 
 const client = new Client({ 
@@ -235,152 +236,195 @@ function saveIntro(userId, introData) {
 
 // Generate intro image
 async function generateIntroImage(userData) {
+    let browser;
     try {
         // Validate data
         const nama = String(userData.nama || 'Unknown').trim() || 'Unknown';
         const umur = String(userData.umur || '?').trim() || '?';
         const gender = String(userData.gender || 'N/A').trim() || 'N/A';
         const hobby = String(userData.hobby || 'N/A').trim() || 'N/A';
+        const city = String(userData.city || 'N/A').trim() || 'N/A';
+        const avatarUrl = userData.avatarUrl || '';
 
-        // Truncate helper
-        const truncateText = (text, maxLength) => {
-            if (text.length > maxLength) {
-                return text.substring(0, maxLength) + '...';
-            }
-            return text;
-        };
-
-        const canvas = createCanvas(1000, 500);
-        const ctx = canvas.getContext('2d');
-
-        // Set antialias dan text properties
-        ctx.antialias = 'gray';
-        ctx.textDrawingMode = 'path';
-
-        // Background gradient
-        const backgroundGradient = ctx.createLinearGradient(0, 0, 1000, 500);
-        backgroundGradient.addColorStop(0, '#0f0f1e');
-        backgroundGradient.addColorStop(1, '#1a1a2e');
-        ctx.fillStyle = backgroundGradient;
-        ctx.fillRect(0, 0, 1000, 500);
-
-        // Main border
-        ctx.strokeStyle = '#ff006e';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(20, 20, 960, 460);
-
-        // Title bar background
-        ctx.fillStyle = '#1a1f3a';
-        ctx.fillRect(20, 20, 960, 80);
-        
-        // Title
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '48px Arial';
-        ctx.fontStyle = 'bold';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        try {
-            ctx.fillText('MEMBER INTRODUCTION', 50, 60);
-        } catch (e) {
-            console.warn('⚠️ Title text rendering failed:', e.message);
-        }
-
-        // Content area
-        const contentStartY = 120;
-        const avatarX = 80;
-        const avatarY = contentStartY + 80;
-        const avatarSize = 160;
-
-        // Load and draw avatar
-        try {
-            if (userData.avatarUrl) {
-                const avatarImage = await loadImage(userData.avatarUrl);
+        // HTML/CSS template
+        const htmlTemplate = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
                 
-                // Create circular mask for avatar
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(avatarImage, avatarX, avatarY, avatarSize, avatarSize);
-                ctx.restore();
+                body {
+                    width: 1200px;
+                    height: 600px;
+                    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+                    font-family: 'Arial', sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .container {
+                    width: 1140px;
+                    height: 540px;
+                    background: rgba(15, 15, 30, 0.7);
+                    border: 2px solid #7c3aed;
+                    border-radius: 20px;
+                    padding: 40px;
+                    display: flex;
+                    gap: 60px;
+                    align-items: flex-start;
+                }
+                
+                .title {
+                    position: absolute;
+                    top: 40px;
+                    left: 0;
+                    right: 0;
+                    text-align: center;
+                    color: #ffffff;
+                    font-size: 48px;
+                    font-weight: bold;
+                    letter-spacing: 2px;
+                    padding-bottom: 20px;
+                    border-bottom: 2px solid #7c3aed;
+                    width: 90%;
+                    margin: 0 auto;
+                }
+                
+                .content {
+                    display: flex;
+                    gap: 80px;
+                    width: 100%;
+                    margin-top: 80px;
+                }
+                
+                .avatar-section {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 20px;
+                }
+                
+                .avatar {
+                    width: 220px;
+                    height: 220px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: 4px solid #ff006e;
+                    box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+                    background: linear-gradient(135deg, #ff006e, #ff6b00);
+                }
+                
+                .avatar img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+                
+                .info-section {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 40px;
+                }
+                
+                .info-field {
+                    display: flex;
+                    gap: 40px;
+                    align-items: center;
+                }
+                
+                .field-label {
+                    color: #a78bfa;
+                    font-size: 20px;
+                    font-weight: bold;
+                    min-width: 150px;
+                    letter-spacing: 1px;
+                }
+                
+                .field-value {
+                    color: #ffffff;
+                    font-size: 22px;
+                    font-weight: 500;
+                }
+                
+                .footer {
+                    position: absolute;
+                    bottom: 30px;
+                    right: 40px;
+                    color: #666666;
+                    font-size: 14px;
+                    letter-spacing: 3px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="title">MEMBER INTRODUCTION</div>
+            <div class="container">
+                <div class="content">
+                    <div class="avatar-section">
+                        <div class="avatar">
+                            <img src="${avatarUrl}" alt="Avatar">
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <div class="info-field">
+                            <div class="field-label">NAME</div>
+                            <div class="field-value">${nama}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="field-label">AGE</div>
+                            <div class="field-value">${umur}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="field-label">GENDER</div>
+                            <div class="field-value">${gender}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="field-label">CITY</div>
+                            <div class="field-value">${city}</div>
+                        </div>
+                        <div class="info-field">
+                            <div class="field-label">HOBBY</div>
+                            <div class="field-value">${hobby}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer">𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐬</div>
+            </div>
+        </body>
+        </html>
+        `;
 
-                // Avatar border
-                ctx.strokeStyle = '#ff006e';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-        } catch (err) {
-            console.warn('⚠️ Avatar loading failed:', err.message);
-            // Fallback: solid circle with initials
-            ctx.fillStyle = '#ff006e';
-            ctx.beginPath();
-            ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-            ctx.fill();
+        // Launch browser
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
 
-            // Initials
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '60px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            try {
-                ctx.fillText(nama.charAt(0).toUpperCase(), avatarX + avatarSize / 2, avatarY + avatarSize / 2);
-            } catch (e) {
-                console.warn('⚠️ Initial text rendering failed');
-            }
-        }
-
-        // Info fields - right side
-        const infoStartX = 350;
-        const fieldLabelWidth = 100;
-        let currentY = contentStartY + 40;
-        const lineSpacing = 75;
-
-        const fields = [
-            { label: 'NAME', value: truncateText(nama, 40) },
-            { label: 'AGE', value: truncateText(umur, 40) },
-            { label: 'GENDER', value: truncateText(gender, 40) },
-            { label: 'HOBBY', value: truncateText(hobby, 40) }
-        ];
-
-        for (const field of fields) {
-            try {
-                // Label (cyan)
-                ctx.fillStyle = '#00d9ff';
-                ctx.font = '16px Arial';
-                ctx.fontStyle = 'bold';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(field.label, infoStartX, currentY);
-
-                // Value (white)
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '18px Arial';
-                ctx.textAlign = 'left';
-                ctx.textBaseline = 'top';
-                ctx.fillText(field.value, infoStartX + fieldLabelWidth + 20, currentY);
-            } catch (e) {
-                console.warn(`⚠️ Field "${field.label}" rendering failed:`, e.message);
-            }
-
-            currentY += lineSpacing;
-        }
-
-        // Footer
-        try {
-            ctx.fillStyle = '#666666';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText('UNDERCOVER BESTIE - El Gato', 950, 485);
-        } catch (e) {
-            console.warn('⚠️ Footer rendering failed');
-        }
-
-        return canvas.toBuffer('image/png');
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1200, height: 600 });
+        await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' });
+        
+        // Take screenshot
+        const screenshot = await page.screenshot({ type: 'png' });
+        
+        await browser.close();
+        return screenshot;
+        
     } catch (error) {
         console.error('❌ Error generating intro image:', error.message);
+        if (browser) {
+            await browser.close().catch(() => {});
+        }
         throw error;
     }
 }
@@ -2043,9 +2087,10 @@ client.on('interactionCreate', async (interaction) => {
                 const nama = interaction.fields.getTextInputValue('intro_nama')?.trim();
                 const gender = interaction.fields.getTextInputValue('intro_gender')?.trim();
                 const hobby = interaction.fields.getTextInputValue('intro_hobby')?.trim();
+                const city = interaction.fields.getTextInputValue('intro_city')?.trim();
                 
                 // Validate inputs
-                if (!nama || !gender || !hobby) {
+                if (!nama || !gender || !hobby || !city) {
                     return await interaction.reply({
                         content: '❌ All fields are required! Tolong isi semua field.',
                         flags: 64
@@ -2075,6 +2120,7 @@ client.on('interactionCreate', async (interaction) => {
                         umur,
                         gender,
                         hobby,
+                        city,
                         avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: 256 })
                     });
 
@@ -2086,6 +2132,7 @@ client.on('interactionCreate', async (interaction) => {
                         umur,
                         gender,
                         hobby,
+                        city,
                         createdAt: new Date().toISOString(),
                         avatar: interaction.user.displayAvatarURL()
                     };
@@ -2250,11 +2297,19 @@ client.on('interactionCreate', async (interaction) => {
                     .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
                     .setRequired(true);
 
+                const cityInput = new TextInputBuilder()
+                    .setCustomId('intro_city')
+                    .setLabel('Kota/Tempat Tinggal')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Contoh: Jakarta, Bandung, Surabaya')
+                    .setRequired(true);
+
                 const row1 = new ActionRowBuilder().addComponents(namaInput);
                 const row2 = new ActionRowBuilder().addComponents(genderInput);
                 const row3 = new ActionRowBuilder().addComponents(hobbyInput);
+                const row4 = new ActionRowBuilder().addComponents(cityInput);
 
-                modal.addComponents(row1, row2, row3);
+                modal.addComponents(row1, row2, row3, row4);
 
                 await interaction.showModal(modal);
                 
