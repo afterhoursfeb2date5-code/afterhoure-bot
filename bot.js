@@ -248,178 +248,153 @@ async function generateIntroImage(userData) {
 
         // HTML/CSS template
                 const htmlTemplate = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-            <style>
-                * { box-sizing: border-box; }
-                body {
-                    margin: 0;
-                    width: 1400px;
-                    height: 520px;
-                    font-family: 'Poppins', sans-serif;
-                    background: radial-gradient(circle at top, #1b1530, #0a0815);
-                    color: #fff;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    padding: 0;
-                    background-image: radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
-                    background-size: 40px 40px;
-                }
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            width: 1280px;
+            height: 520px;
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #0f0b14, #0a0811);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
 
-                .card {
-                    width: 1320px;
-                    height: 440px;
-                    border-radius: 18px;
-                    border: 2px solid rgba(109,40,217,0.18);
-                    padding: 26px 56px;
-                    display: flex;
-                    gap: 40px;
-                    position: relative;
-                    align-items: center;
-                    overflow: hidden;
-                    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-                }
+        .card {
+            width: 1200px;
+            height: 440px;
+            border-radius: 18px;
+            border: 2px solid rgba(109,40,217,0.18);
+            padding: 28px 48px;
+            display: flex;
+            gap: 32px;
+            position: relative;
+            align-items: center;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+        }
 
-                .title {
-                    position: absolute;
-                    top: 10px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    font-size: 44px;
-                    font-weight: 800;
-                    letter-spacing: 3px;
-                    color: #e9d9ff;
-                    text-transform: uppercase;
-                    padding-bottom: 8px;
-                    border-bottom: 4px solid rgba(189,169,255,0.08);
-                    width: 640px;
-                    text-align: center;
-                }
+        .title {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #e6d8ff;
+            text-transform: uppercase;
+            padding-bottom: 8px;
+            border-bottom: 4px solid rgba(183,150,255,0.08);
+            width: 520px;
+            text-align: center;
+        }
 
-                .avatar-wrap {
-                    position: relative;
-                    width: 240px;
-                    height: 240px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
+        .avatar-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 240px;
+            min-width: 240px;
+        }
 
-                .avatar-ring {
-                    width: 220px;
-                    height: 220px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    background: conic-gradient(from 200deg at 50% 50%, rgba(109,40,217,0.9), rgba(189,169,255,0.6));
-                    padding: 6px;
-                    box-shadow: 0 0 0 6px rgba(10,8,13,0.6) inset;
-                }
+        .avatar {
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 0 6px rgba(109,40,217,0.12), 0 0 0 12px rgba(109,40,217,0.04) inset;
+            border: 4px solid rgba(109,40,217,0.08);
+            flex-shrink: 0;
+        }
 
-                .avatar {
-                    width: 190px;
-                    height: 190px;
-                    border-radius: 50%;
-                    overflow: hidden;
-                    border: 3px solid rgba(0,0,0,0.5);
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-                    background: #0b0810;
-                }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
 
-                .avatar img { width:100%; height:100%; object-fit:cover; }
+        .divider {
+            width: 1px;
+            height: 260px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+            margin: 0 28px;
+        }
 
-                /* decorative ticks */
-                .avatar-wrap:before, .avatar-wrap:after{
-                    content: '';
-                    position: absolute;
-                    width: 360px;
-                    height: 360px;
-                    border-radius: 50%;
-                    top: -60px;
-                    left: -60px;
-                    background: radial-gradient(circle, transparent 68%, rgba(189,169,255,0.03) 70%);
-                    pointer-events: none;
-                    mix-blend-mode: screen;
-                }
+        .info {
+            flex: 1;
+            margin-top: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
 
-                .divider {
-                    width: 1px;
-                    height: 320px;
-                    background: linear-gradient(#2b2540, transparent 30%, transparent 70%, #2b2540);
-                    opacity: 0.35;
-                }
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
 
-                .info {
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 18px;
-                    padding-left: 20px;
-                }
+        .label {
+            width: 160px;
+            color: #cdbaff;
+            font-weight: 800;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            font-size: 18px;
+        }
 
-                .row { display:flex; align-items:center; gap:18px; }
+        .value {
+            flex: 1;
+            background: rgba(255,255,255,0.02);
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.02);
+            color: #e8def8;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-                .label {
-                    width: 160px;
-                    color: #d8c7ff;
-                    font-weight: 800;
-                    letter-spacing: 2px;
-                    text-transform: uppercase;
-                    font-size: 18px;
-                }
+        .footer { display: none; }
+    </style>
+    </head>
+    <body>
+    <div class="card">
+        <div class="title">MEMBER INTRODUCTION</div>
 
-                .value {
-                    flex: 1;
-                    background: rgba(17,12,20,0.6);
-                    padding: 12px 18px;
-                    border-radius: 10px;
-                    border: 1px solid rgba(255,255,255,0.02);
-                    color: #e6dffb;
-                    font-size: 18px;
-                }
-
-                .footer {
-                    position: absolute;
-                    bottom: 12px;
-                    right: 18px;
-                    font-size: 12px;
-                    color: rgba(189,169,255,0.55);
-                    letter-spacing: 1px;
-                }
-            </style>
-            </head>
-            <body>
-            <div class="card">
-                <div class="title">MEMBER INTRODUCTION</div>
-
-                <div class="avatar-wrap">
-                    <div class="avatar-ring">
-                        <div class="avatar"><img src="{{AVATAR}}"></div>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="info">
-                    <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
-                    <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
-                    <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
-                    <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
-                    <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
-                </div>
-
-                <div class="footer">★ UNDERCOVER BESTIE ★</div>
-
+        <div class="avatar-wrap">
+            <div class="avatar">
+                <img src="{{AVATAR}}">
             </div>
-            </body>
-            </html>
+        </div>
 
-                        `;
+        <div class="divider"></div>
+
+        <div class="info">
+            <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
+            <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
+            <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
+            <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
+            <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
+        </div>
+
+    </div>
+    </body>
+    </html>
+
+                `;
 
         // Inline avatar image as data URL (safer than external loads) and inject values
         const escapeHtml = (str) => String(str)
