@@ -262,16 +262,19 @@ async function generateIntroImage(userData) {
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .card {
-      width: 100%;
-      height: 100%;
+      width: 900px;
+      height: 420px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 48px 48px 36px 48px;
+            padding: 40px 48px 36px 48px;
             display: flex;
-            gap: 36px;
+            gap: 32px;
             position: relative;
             align-items: flex-start;
     }
@@ -288,12 +291,12 @@ async function generateIntroImage(userData) {
     }
 
     .avatar {
-            width: 200px;
-            height: 200px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
-            margin-top: 60px;
+            margin-top: 40px;
             box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
     }
 
@@ -320,7 +323,7 @@ async function generateIntroImage(userData) {
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .value {
@@ -330,7 +333,7 @@ async function generateIntroImage(userData) {
             border-radius: 10px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 18px;
+            font-size: 20px;
         }
 
     .footer {
