@@ -262,8 +262,8 @@ async function generateIntroImage(userData) {
                 body {
                     width: 1200px;
                     height: 600px;
-                    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
-                    font-family: 'Arial', sans-serif;
+                    background: linear-gradient(135deg, #0a0a15 0%, #0f0f1e 50%, #1a1a2e 100%);
+                    font-family: 'Segoe UI', 'Arial', sans-serif;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -272,36 +272,37 @@ async function generateIntroImage(userData) {
                 .container {
                     width: 1140px;
                     height: 540px;
-                    background: rgba(15, 15, 30, 0.7);
-                    border: 2px solid #7c3aed;
-                    border-radius: 20px;
-                    padding: 40px;
+                    background: rgba(10, 10, 25, 0.8);
+                    border: 3px solid #6d28d9;
+                    border-radius: 25px;
+                    padding: 50px;
                     display: flex;
-                    gap: 60px;
+                    gap: 80px;
                     align-items: flex-start;
+                    box-shadow: 0 0 50px rgba(109, 40, 217, 0.3), inset 0 0 20px rgba(109, 40, 217, 0.1);
                 }
                 
                 .title {
                     position: absolute;
-                    top: 40px;
+                    top: 35px;
                     left: 0;
                     right: 0;
                     text-align: center;
                     color: #ffffff;
-                    font-size: 48px;
-                    font-weight: bold;
-                    letter-spacing: 2px;
-                    padding-bottom: 20px;
-                    border-bottom: 2px solid #7c3aed;
-                    width: 90%;
+                    font-size: 52px;
+                    font-weight: 800;
+                    letter-spacing: 3px;
+                    padding-bottom: 25px;
+                    border-bottom: 3px solid #6d28d9;
+                    width: 92%;
                     margin: 0 auto;
                 }
                 
                 .content {
                     display: flex;
-                    gap: 80px;
+                    gap: 100px;
                     width: 100%;
-                    margin-top: 80px;
+                    margin-top: 90px;
                 }
                 
                 .avatar-section {
@@ -309,58 +310,68 @@ async function generateIntroImage(userData) {
                     flex-direction: column;
                     align-items: center;
                     gap: 20px;
+                    flex-shrink: 0;
                 }
                 
                 .avatar {
-                    width: 220px;
-                    height: 220px;
+                    width: 240px;
+                    height: 240px;
                     border-radius: 50%;
                     overflow: hidden;
-                    border: 4px solid #ff006e;
-                    box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
-                    background: linear-gradient(135deg, #ff006e, #ff6b00);
+                    border: 5px solid #ff0066;
+                    box-shadow: 
+                        0 0 40px rgba(255, 0, 102, 0.6),
+                        0 0 80px rgba(255, 0, 102, 0.3),
+                        inset 0 0 20px rgba(255, 255, 255, 0.1);
+                    background: linear-gradient(135deg, #ff0066, #ff6600);
+                    position: relative;
                 }
                 
                 .avatar img {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
+                    display: block;
                 }
                 
                 .info-section {
                     flex: 1;
                     display: flex;
                     flex-direction: column;
-                    gap: 40px;
+                    gap: 45px;
+                    padding-top: 10px;
                 }
                 
                 .info-field {
                     display: flex;
-                    gap: 40px;
+                    gap: 50px;
                     align-items: center;
                 }
                 
                 .field-label {
-                    color: #a78bfa;
-                    font-size: 20px;
-                    font-weight: bold;
-                    min-width: 150px;
-                    letter-spacing: 1px;
+                    color: #b4a3ff;
+                    font-size: 19px;
+                    font-weight: 700;
+                    min-width: 130px;
+                    letter-spacing: 1.5px;
+                    text-transform: uppercase;
                 }
                 
                 .field-value {
                     color: #ffffff;
-                    font-size: 22px;
+                    font-size: 20px;
                     font-weight: 500;
+                    letter-spacing: 0.5px;
                 }
                 
                 .footer {
                     position: absolute;
-                    bottom: 30px;
-                    right: 40px;
-                    color: #666666;
-                    font-size: 14px;
-                    letter-spacing: 3px;
+                    bottom: 28px;
+                    right: 50px;
+                    color: #808080;
+                    font-size: 13px;
+                    letter-spacing: 5px;
+                    font-weight: 400;
                 }
             </style>
         </head>
