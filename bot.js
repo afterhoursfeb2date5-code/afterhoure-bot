@@ -111,6 +111,7 @@ const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
 const AUTO_RESPONSES_FILE = path.join(CONFIG_DIR, 'autoresponses.json');
+const INTRODUCTIONS_FILE = path.join(CONFIG_DIR, 'introductions.json');
 
 // Hardcoded Channel IDs
 const HARDCODED_BOOSTER_CHANNEL_ID = '1468793035042062531';
@@ -202,6 +203,27 @@ function saveAutoResponses(autoResponses) {
         fs.writeFileSync(AUTO_RESPONSES_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
         console.error('Error saving auto-responses:', error);
+    }
+}
+
+// Introduction functions
+function loadIntroductions() {
+    try {
+        if (fs.existsSync(INTRODUCTIONS_FILE)) {
+            return JSON.parse(fs.readFileSync(INTRODUCTIONS_FILE, 'utf8'));
+        }
+        return {};
+    } catch (error) {
+        console.error('Error loading introductions:', error);
+        return {};
+    }
+}
+
+function saveIntroductions(introductions) {
+    try {
+        fs.writeFileSync(INTRODUCTIONS_FILE, JSON.stringify(introductions, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving introductions:', error);
     }
 }
 
@@ -453,6 +475,9 @@ const commands = [
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    new SlashCommandBuilder()
+        .setName('introduction')
+        .setDescription('Create your introduction card'),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -676,6 +701,9 @@ client.once('clientReady', () => {
     client.boosterConfig = loadBoosterConfig();
     client.logsConfig = loadLogsConfig();
     client.autoResponses = loadAutoResponses();
+    client.introductions = loadIntroductions();
+    // Temp storage while user memilih age sebelum submit modal
+    client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
     
     // Set rotating presence
@@ -1442,6 +1470,29 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'introduction') {
+            try {
+                const introEmbed = new EmbedBuilder()
+                    .setTitle('Introduce Yourself')
+                    .setDescription('Klik tombol di bawah untuk mengisi introduction form!')
+                    .setColor(0x5865F2)
+                    .setFooter({ text: 'Fields: Name, Age (18+/18-), Hobby, About You' });
+
+                const introButton = new ButtonBuilder()
+                    .setCustomId('open_intro_modal')
+                    .setLabel('Introduce Yourself')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('📣');
+
+                const row = new ActionRowBuilder().addComponents(introButton);
+
+                await interaction.reply({ embeds: [introEmbed], components: [row] });
+            } catch (error) {
+                console.error('Error showing introduction message:', error);
+                await interaction.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
+            }
+        }
+
 
 
     }
@@ -1584,6 +1635,86 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
         }
+
+        if (interaction.customId === 'intro_form_modal') {
+            try {
+                const name = interaction.fields.getTextInputValue('intro_name');
+                const hobby = interaction.fields.getTextInputValue('intro_hobby');
+                const about = interaction.fields.getTextInputValue('intro_about');
+
+                // Get age yang sudah disimpan
+                const tempData = client._introTemp.get(interaction.user.id) || {};
+                const age = tempData.age === '18plus' ? '18+' : '18-';
+
+                // Create introduction embed
+                const introEmbed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle('📣 New Introduction!')
+                    .setThumbnail(interaction.user.displayAvatarURL())
+                    .addFields(
+                        { name: 'Name', value: name, inline: true },
+                        { name: 'Age Category', value: age, inline: true },
+                        { name: 'Hobby', value: hobby, inline: false },
+                        { name: 'About', value: about, inline: false }
+                    )
+                    .setFooter({ text: `Submitted by ${interaction.user.username}` })
+                    .setTimestamp();
+
+                // Create view profile button
+                const viewButton = new ButtonBuilder()
+                    .setCustomId(`view_intro_${interaction.user.id}`)
+                    .setLabel('View Profile')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('👤');
+
+                const row = new ActionRowBuilder().addComponents(viewButton);
+
+                // Send to introduction channel
+                const introChannelId = '1468647406253117551'; // Ganti dengan channel ID intro kamu
+                const introChannel = interaction.guild.channels.cache.get(introChannelId);
+
+                if (introChannel) {
+                    await introChannel.send({
+                        embeds: [introEmbed],
+                        components: [row]
+                    });
+                }
+
+                // Save introduction to file
+                const introductions = client.introductions || {};
+                introductions[interaction.user.id] = {
+                    userId: interaction.user.id,
+                    name: name,
+                    age: age,
+                    hobby: hobby,
+                    about: about,
+                    username: interaction.user.username,
+                    avatar: interaction.user.displayAvatarURL(),
+                    submittedAt: new Date()
+                };
+                client.introductions = introductions;
+                saveIntroductions(introductions);
+
+                // Clean up temp data
+                client._introTemp.delete(interaction.user.id);
+
+                // Reply to user
+                const successReply = await interaction.reply({
+                    content: '✅ Introduction berhasil dikirim! Terima kasih sudah memperkenalkan diri! 🎉',
+                    flags: 64
+                });
+
+                setTimeout(() => {
+                    successReply.delete().catch(console.error);
+                }, 3000);
+            } catch (error) {
+                console.error('Error processing introduction:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
     }
 
     if (interaction.isButton()) {
@@ -1638,6 +1769,79 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (interaction.customId === 'open_intro_modal') {
+            try {
+                // Create age select menu
+                const ageSelect = new StringSelectMenuBuilder()
+                    .setCustomId('intro_age_select')
+                    .setPlaceholder('Pilih kategori umur')
+                    .addOptions(
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18+')
+                            .setValue('18plus')
+                            .setDescription('18 tahun ke atas'),
+                        new StringSelectMenuOptionBuilder()
+                            .setLabel('18-')
+                            .setValue('18minus')
+                            .setDescription('Di bawah 18 tahun')
+                    );
+
+                const row = new ActionRowBuilder().addComponents(ageSelect);
+
+                await interaction.reply({
+                    content: '📋 Pilih kategori umur kamu terlebih dahulu:',
+                    components: [row],
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error showing age select:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        // Handle view introduction profile buttons
+        if (interaction.customId.startsWith('view_intro_')) {
+            try {
+                const userId = interaction.customId.replace('view_intro_', '');
+                const introductions = client.introductions || {};
+                const intro = introductions[userId];
+
+                if (!intro) {
+                    return await interaction.reply({
+                        content: '❌ Introduction tidak ditemukan!',
+                        flags: 64
+                    });
+                }
+
+                const profileEmbed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle(`${intro.name}'s Profile`)
+                    .setThumbnail(intro.avatar)
+                    .addFields(
+                        { name: '👤 Name', value: intro.name, inline: true },
+                        { name: '📅 Age Category', value: intro.age, inline: true },
+                        { name: '🎮 Hobby', value: intro.hobby, inline: false },
+                        { name: '📝 About', value: intro.about, inline: false }
+                    )
+                    .setFooter({ text: `Discord: @${intro.username}` })
+                    .setTimestamp(new Date(intro.submittedAt));
+
+                await interaction.reply({
+                    embeds: [profileEmbed],
+                    flags: 64
+                });
+            } catch (error) {
+                console.error('Error viewing introduction:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
         if (interaction.customId === 'suggestion_box_button') {
             try {
                 const modal = new ModalBuilder()
@@ -1667,7 +1871,49 @@ client.on('interactionCreate', async (interaction) => {
     // Handle string select menus
     if (interaction.isStringSelectMenu()) {
         try {
-            // No handlers for string select menus currently
+            if (interaction.customId === 'intro_age_select') {
+                const ageValue = interaction.values[0];
+
+                // Store age temporarily
+                if (!client._introTemp) {
+                    client._introTemp = new Map();
+                }
+                client._introTemp.set(interaction.user.id, { age: ageValue });
+
+                // Show introduction form modal
+                const modal = new ModalBuilder()
+                    .setCustomId('intro_form_modal')
+                    .setTitle('Introduce Yourself');
+
+                const nameInput = new TextInputBuilder()
+                    .setCustomId('intro_name')
+                    .setLabel('Nama')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Masukkan nama kamu')
+                    .setRequired(true);
+
+                const hobbyInput = new TextInputBuilder()
+                    .setCustomId('intro_hobby')
+                    .setLabel('Hobby')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('Apa hobby mu?')
+                    .setRequired(true);
+
+                const aboutInput = new TextInputBuilder()
+                    .setCustomId('intro_about')
+                    .setLabel('About You')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setPlaceholder('Ceritakan sesuatu tentang dirimu...')
+                    .setRequired(true);
+
+                const row1 = new ActionRowBuilder().addComponents(nameInput);
+                const row2 = new ActionRowBuilder().addComponents(hobbyInput);
+                const row3 = new ActionRowBuilder().addComponents(aboutInput);
+
+                modal.addComponents(row1, row2, row3);
+
+                await interaction.showModal(modal);
+            }
         } catch (error) {
             console.error('Error handling string select menu:', error);
         }
