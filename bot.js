@@ -293,8 +293,6 @@ async function generateIntroImage(userData) {
       white-space: nowrap;
       border-bottom: 2px solid rgba(205, 186, 255, 0.4);
       padding-bottom: 10px;
-      width: 100%;
-      text-align: center;
     }
 
     .avatar {
