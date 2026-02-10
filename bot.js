@@ -258,7 +258,7 @@ async function generateIntroImage(userData) {
     body {
       margin: 0;
       width: 1200px;
-      height: 300px;
+      height: 450px;
       font-family: 'Poppins', sans-serif;
       background: radial-gradient(circle at top, #1b1530, #0a0815);
       color: #fff;
@@ -269,13 +269,13 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 1200px;
-      height: 280px;
+      width: 1150px;
+      height: 400px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 10px 40px 10px 40px;
+            padding: 20px 100px 20px 100px;
             display: flex;
-            gap: 30px;
+            gap: 40px;
             position: relative;
             align-items: center;
             overflow: hidden;
@@ -283,10 +283,10 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 10px;
+      top: 35px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 28px;
+      font-size: 36px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
@@ -294,8 +294,8 @@ async function generateIntroImage(userData) {
     }
 
     .avatar {
-            width: 140px;
-            height: 140px;
+            width: 170px;
+            height: 170px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
@@ -312,10 +312,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 0;
+            margin-top: 65px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
     }
 
     .row {
@@ -337,11 +337,11 @@ async function generateIntroImage(userData) {
         .value {
             flex: 1;
             background: rgba(255,255,255,0.03);
-            padding: 8px 12px;
+            padding: 12px 16px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 14px;
+            font-size: 18px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -417,7 +417,7 @@ async function generateIntroImage(userData) {
         });
 
         const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 300 });
+        await page.setViewport({ width: 1200, height: 450 });
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
 
         // Take screenshot
