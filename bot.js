@@ -269,13 +269,13 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 850px;
-      height: 420px;
+      width: 900px;
+      height: 460px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 35px 45px 35px 45px;
+            padding: 40px 50px 40px 50px;
             display: flex;
-            gap: 32px;
+            gap: 35px;
             position: relative;
             align-items: center;
             overflow: hidden;
@@ -283,13 +283,14 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 25px;
+      top: 30px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 32px;
+      font-size: 33px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
+      white-space: nowrap;
     }
 
     .avatar {
@@ -311,7 +312,7 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 45px;
+            margin-top: 55px;
             display: flex;
             flex-direction: column;
             gap: 15px;
