@@ -111,21 +111,14 @@ const CONFIG_DIR = path.join(__dirname, 'config');
 const BOOSTER_CONFIG_FILE = path.join(CONFIG_DIR, 'booster-config.json');
 const LOGS_CONFIG_FILE = path.join(CONFIG_DIR, 'logs-config.json');
 const AUTO_RESPONSES_FILE = path.join(CONFIG_DIR, 'autoresponses.json');
-const INTROS_FILE = path.join(CONFIG_DIR, 'intros.json');
-const INTROS_IMAGES_DIR = path.join(__dirname, 'intro-images');
 
 // Hardcoded Channel IDs
 const HARDCODED_BOOSTER_CHANNEL_ID = '1468793035042062531';
 const HARDCODED_LOGS_CHANNEL_ID = '1470227456396103859';
-const HARDCODED_INTRO_CHANNEL_ID = '1468647406253117551';
 
 // Ensure config directory exists
 if (!fs.existsSync(CONFIG_DIR)) {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(INTROS_IMAGES_DIR)) {
-    fs.mkdirSync(INTROS_IMAGES_DIR, { recursive: true });
 }
 
 // Load configs
@@ -209,233 +202,6 @@ function saveAutoResponses(autoResponses) {
         fs.writeFileSync(AUTO_RESPONSES_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (error) {
         console.error('Error saving auto-responses:', error);
-    }
-}
-
-function loadIntros() {
-    try {
-        if (fs.existsSync(INTROS_FILE)) {
-            return JSON.parse(fs.readFileSync(INTROS_FILE, 'utf8'));
-        }
-        return {};
-    } catch (error) {
-        console.error('Error loading intros:', error);
-        return {};
-    }
-}
-
-function saveIntro(userId, introData) {
-    try {
-        const intros = loadIntros();
-        intros[userId] = introData;
-        fs.writeFileSync(INTROS_FILE, JSON.stringify(intros, null, 2), 'utf8');
-    } catch (error) {
-        console.error('Error saving intro:', error);
-    }
-}
-
-// Generate intro image
-async function generateIntroImage(userData) {
-    let browser;
-    try {
-        // Validate data
-        const nama = String(userData.nama || 'Unknown').trim() || 'Unknown';
-        const umur = String(userData.umur || '?').trim() || '?';
-        const gender = String(userData.gender || 'N/A').trim() || 'N/A';
-        const hobby = String(userData.hobby || 'N/A').trim() || 'N/A';
-        const city = String(userData.city || 'N/A').trim() || 'N/A';
-        const avatarUrl = userData.avatarUrl || '';
-
-        // HTML/CSS template
-        const htmlTemplate = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      width: 1200px;
-      height: 600px;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #1b1530, #0a0815);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
-    }
-
-    .card {
-      width: 1050px;
-      height: 480px;
-      border-radius: 20px;
-            border: 2px solid rgba(109,40,217,0.25);
-            padding: 30px 90px 30px 90px;
-            display: flex;
-            gap: 40px;
-            position: relative;
-            align-items: center;
-            overflow: hidden;
-    }
-
-    .title {
-      position: absolute;
-      top: 25px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 40px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #cdbaff;
-      white-space: nowrap;
-      border-bottom: 2px solid rgba(205, 186, 255, 0.4);
-      padding-bottom: 10px;
-    }
-
-    .avatar {
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 4px solid rgba(205, 186, 255, 0.5);
-            margin-top: 0;
-            flex-shrink: 0;
-            box-shadow: 0 0 20px rgba(205, 186, 255, 0.3), inset 0 6px 18px rgba(0,0,0,0.6);
-    }
-
-    .avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .info {
-            flex: 1;
-            margin-top: 50px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-    }
-
-    .row {
-      display: flex;
-            margin-bottom: 0;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-        .label {
-            width: 150px;
-            color: #bda9ff;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 16px;
-        }
-
-        .value {
-            flex: 1;
-            background: transparent;
-            padding: 0 0 0 20px;
-            border-radius: 0;
-            border: 0;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 400;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-    .footer {
-      position: absolute;
-      bottom: 15px;
-      right: 30px;
-      font-size: 12px;
-      opacity: 0.6;
-      letter-spacing: 1px;
-      display: none;
-    }
-    </style>
-    </head>
-    <body>
-    <div class="card">
-        <div class="title">MEMBER INTRODUCTION</div>
-
-        <div class="avatar">
-        <img src="{{AVATAR}}">
-        </div>
-
-        <div class="info">
-        <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
-        <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
-        <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
-        <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
-        <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
-        </div>
-
-        <div class="footer">After Hours</div>
-    </div>
-    </body>
-    </html>
-
-        `;
-
-        // Inline avatar image as data URL (safer than external loads) and inject values
-        const escapeHtml = (str) => String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/\"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
-        let avatarDataUrl = '';
-        try {
-            if (avatarUrl) {
-                const resp = await axios.get(avatarUrl, { responseType: 'arraybuffer', timeout: 5000 });
-                const contentType = resp.headers['content-type'] || 'image/png';
-                const base64 = Buffer.from(resp.data, 'binary').toString('base64');
-                avatarDataUrl = `data:${contentType};base64,${base64}`;
-            }
-        } catch (err) {
-            console.warn('Warning: failed to fetch avatar, using blank placeholder', err && err.message);
-            avatarDataUrl = '';
-        }
-
-        // Replace placeholders with safe values
-        const finalHtml = htmlTemplate
-            .replace(/{{AVATAR}}/g, avatarDataUrl || '')
-            .replace(/{{NAME}}/g, escapeHtml(nama))
-            .replace(/{{AGE}}/g, escapeHtml(umur))
-            .replace(/{{GENDER}}/g, escapeHtml(gender))
-            .replace(/{{CITY}}/g, escapeHtml(city))
-            .replace(/{{HOBBY}}/g, escapeHtml(hobby));
-
-        // Launch browser
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 600 });
-        await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
-
-        // Take screenshot
-        const screenshot = await page.screenshot({ type: 'png' });
-
-        await browser.close();
-        return screenshot;
-        
-    } catch (error) {
-        console.error('❌ Error generating intro image:', error.message);
-        if (browser) {
-            await browser.close().catch(() => {});
-        }
-        throw error;
     }
 }
 
@@ -687,9 +453,6 @@ const commands = [
     new SlashCommandBuilder()
         .setName('suggest')
         .setDescription('Submit a suggestion to the server'),
-    new SlashCommandBuilder()
-        .setName('intro')
-        .setDescription('Submit your member introduction'),
     new SlashCommandBuilder()
         .setName('disconnect')
         .setDescription('Disconnect bot from voice channel')
@@ -1911,44 +1674,6 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
-        if (commandName === 'intro') {
-            try {
-                const umurSelect = new StringSelectMenuBuilder()
-                    .setCustomId('intro_umur_select')
-                    .setPlaceholder('Pilih rentang umur kamu')
-                    .addOptions([
-                        {
-                            label: '18+',
-                            value: '18+'
-                        },
-                        {
-                            label: '18-',
-                            value: '18-'
-                        }
-                    ]);
-
-                const row = new ActionRowBuilder().addComponents(umurSelect);
-
-                // Initialize storage
-                if (!client.introUmurSelections) {
-                    client.introUmurSelections = new Map();
-                }
-
-                await interaction.reply({
-                    content: '📋 **Member Introduction**\n\nPilih rentang umur kamu terlebih dahulu:',
-                    components: [row],
-                    flags: 64
-                });
-
-            } catch (error) {
-                console.error('Error showing intro umur selection:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
-            }
-        }
-
 
 
     }
@@ -2091,103 +1816,6 @@ client.on('interactionCreate', async (interaction) => {
                 });
             }
         }
-
-        if (interaction.customId === 'intro_modal') {
-            try {
-                const nama = interaction.fields.getTextInputValue('intro_nama')?.trim();
-                const gender = interaction.fields.getTextInputValue('intro_gender')?.trim();
-                const hobby = interaction.fields.getTextInputValue('intro_hobby')?.trim();
-                const city = interaction.fields.getTextInputValue('intro_city')?.trim();
-                
-                // Validate inputs
-                if (!nama || !gender || !hobby || !city) {
-                    return await interaction.reply({
-                        content: '❌ All fields are required! Tolong isi semua field.',
-                        flags: 64
-                    });
-                }
-
-                // Get stored umur value
-                const umur = client.introUmurSelections?.get(interaction.user.id) || 'Tidak dipilih';
-                
-                if (umur === 'Tidak dipilih') {
-                    client.introUmurSelections?.delete(interaction.user.id);
-                    return await interaction.reply({
-                        content: '❌ Kamu belum memilih rentang umur! Ulangi dari awal dengan /intro',
-                        flags: 64
-                    });
-                }
-
-                client.introUmurSelections?.delete(interaction.user.id);
-
-                // Defer reply karena generate image bisa lama
-                await interaction.deferReply({ flags: 64 });
-
-                try {
-                    // Generate intro image with avatar
-                    const imageBuffer = await generateIntroImage({
-                        nama,
-                        umur,
-                        gender,
-                        hobby,
-                        city,
-                        avatarUrl: interaction.user.displayAvatarURL({ extension: 'png', size: 256 })
-                    });
-
-                    // Save intro data
-                    const introData = {
-                        userId: interaction.user.id,
-                        username: interaction.user.username,
-                        nama,
-                        umur,
-                        gender,
-                        hobby,
-                        city,
-                        createdAt: new Date().toISOString(),
-                        avatar: interaction.user.displayAvatarURL()
-                    };
-                    saveIntro(interaction.user.id, introData);
-
-                    // Send to intro channel
-                    const introChannel = interaction.guild.channels.cache.get(HARDCODED_INTRO_CHANNEL_ID);
-                    if (introChannel) {
-                        const attachment = new AttachmentBuilder(imageBuffer, { name: `${interaction.user.username}-intro.png` });
-                        
-                        try {
-                            await introChannel.send({
-                                content: `🎉 **${interaction.user.username}'s Introduction**`,
-                                files: [attachment]
-                            });
-                            console.log(`✅ Intro image sent to channel for user ${interaction.user.tag}`);
-                        } catch (channelError) {
-                            console.error('Error sending to intro channel:', channelError);
-                            throw new Error(`Cannot send to intro channel: ${channelError.message}`);
-                        }
-                    } else {
-                        console.error('Intro channel not found:', HARDCODED_INTRO_CHANNEL_ID);
-                        throw new Error(`Intro channel not found (ID: ${HARDCODED_INTRO_CHANNEL_ID})`);
-                    }
-
-                    // Reply to user
-                    await interaction.editReply({
-                        content: '✅ Introduction berhasil dikirim! Terima kasih sudah memperkenalkan diri! 🎉'
-                    });
-
-                } catch (generateError) {
-                    console.error('❌ Error in intro processing:', generateError);
-                    await interaction.editReply({
-                        content: `❌ Error saat process intro: ${generateError.message}\n\nCoba refresh dan ulangi.`
-                    });
-                }
-
-            } catch (error) {
-                console.error('❌ Error handling intro modal:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                }).catch(() => {});
-            }
-        }
     }
 
     if (interaction.isButton()) {
@@ -2271,61 +1899,6 @@ client.on('interactionCreate', async (interaction) => {
     // Handle string select menus
     if (interaction.isStringSelectMenu()) {
         try {
-            // Handle intro umur selection
-            if (interaction.customId === 'intro_umur_select') {
-                const selectedUmur = interaction.values[0];
-                
-                if (!client.introUmurSelections) {
-                    client.introUmurSelections = new Map();
-                }
-                
-                client.introUmurSelections.set(interaction.user.id, selectedUmur);
-                
-                // Create and show modal
-                const modal = new ModalBuilder()
-                    .setCustomId('intro_modal')
-                    .setTitle('Member Introduction');
-
-                const namaInput = new TextInputBuilder()
-                    .setCustomId('intro_nama')
-                    .setLabel('Nama Lengkap')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Masukkan nama kamu')
-                    .setRequired(true);
-
-                const genderInput = new TextInputBuilder()
-                    .setCustomId('intro_gender')
-                    .setLabel('Gender')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Contoh: Pria, Wanita, Lainnya')
-                    .setRequired(true);
-
-                const hobbyInput = new TextInputBuilder()
-                    .setCustomId('intro_hobby')
-                    .setLabel('Hobby')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Contoh: Gaming, Membaca, Olahraga')
-                    .setRequired(true);
-
-                const cityInput = new TextInputBuilder()
-                    .setCustomId('intro_city')
-                    .setLabel('Kota/Tempat Tinggal')
-                    .setStyle(TextInputStyle.Short)
-                    .setPlaceholder('Contoh: Jakarta, Bandung, Surabaya')
-                    .setRequired(true);
-
-                const row1 = new ActionRowBuilder().addComponents(namaInput);
-                const row2 = new ActionRowBuilder().addComponents(genderInput);
-                const row3 = new ActionRowBuilder().addComponents(hobbyInput);
-                const row4 = new ActionRowBuilder().addComponents(cityInput);
-
-                modal.addComponents(row1, row2, row3, row4);
-
-                await interaction.showModal(modal);
-                
-                return;
-            }
-
             const selectedValues = interaction.values;
             const member = interaction.member;
 
