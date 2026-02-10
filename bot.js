@@ -366,6 +366,36 @@ async function generateIntroImage(userData) {
 
         `;
 
+        // Inline avatar image as data URL (safer than external loads) and inject values
+        const escapeHtml = (str) => String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/\"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        let avatarDataUrl = '';
+        try {
+            if (avatarUrl) {
+                const resp = await axios.get(avatarUrl, { responseType: 'arraybuffer', timeout: 5000 });
+                const contentType = resp.headers['content-type'] || 'image/png';
+                const base64 = Buffer.from(resp.data, 'binary').toString('base64');
+                avatarDataUrl = `data:${contentType};base64,${base64}`;
+            }
+        } catch (err) {
+            console.warn('Warning: failed to fetch avatar, using blank placeholder', err && err.message);
+            avatarDataUrl = '';
+        }
+
+        // Replace placeholders with safe values
+        const finalHtml = htmlTemplate
+            .replace(/{{AVATAR}}/g, avatarDataUrl || '')
+            .replace(/{{NAME}}/g, escapeHtml(nama))
+            .replace(/{{AGE}}/g, escapeHtml(umur))
+            .replace(/{{GENDER}}/g, escapeHtml(gender))
+            .replace(/{{CITY}}/g, escapeHtml(city))
+            .replace(/{{HOBBY}}/g, escapeHtml(hobby));
+
         // Launch browser
         browser = await puppeteer.launch({
             headless: 'new',
@@ -374,11 +404,11 @@ async function generateIntroImage(userData) {
 
         const page = await browser.newPage();
         await page.setViewport({ width: 1200, height: 600 });
-        await page.setContent(htmlTemplate, { waitUntil: 'networkidle0' });
-        
+        await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+
         // Take screenshot
         const screenshot = await page.screenshot({ type: 'png' });
-        
+
         await browser.close();
         return screenshot;
         
