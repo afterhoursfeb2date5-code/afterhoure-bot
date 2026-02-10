@@ -269,13 +269,13 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 900px;
-      height: 460px;
+      width: 1050px;
+      height: 550px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 40px 50px 40px 50px;
+            padding: 45px 60px 45px 60px;
             display: flex;
-            gap: 35px;
+            gap: 40px;
             position: relative;
             align-items: center;
             overflow: hidden;
@@ -283,10 +283,10 @@ async function generateIntroImage(userData) {
 
     .title {
       position: absolute;
-      top: 30px;
+      top: 35px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 33px;
+      font-size: 36px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
@@ -294,8 +294,8 @@ async function generateIntroImage(userData) {
     }
 
     .avatar {
-            width: 150px;
-            height: 150px;
+            width: 170px;
+            height: 170px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
@@ -312,10 +312,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 55px;
+            margin-top: 65px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 16px;
     }
 
     .row {
@@ -326,22 +326,22 @@ async function generateIntroImage(userData) {
     }
 
         .label {
-            width: 140px;
+            width: 150px;
             color: #bda9ff;
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
-            font-size: 15px;
+            font-size: 16px;
         }
 
         .value {
             flex: 1;
             background: rgba(255,255,255,0.03);
-            padding: 10px 14px;
+            padding: 12px 16px;
             border-radius: 8px;
             border: 1px solid rgba(255,255,255,0.03);
             color: #ffffff;
-            font-size: 17px;
+            font-size: 18px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
