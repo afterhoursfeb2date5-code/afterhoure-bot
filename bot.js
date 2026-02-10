@@ -269,36 +269,37 @@ async function generateIntroImage(userData) {
     }
 
     .card {
-      width: 900px;
-      height: 450px;
+      width: 1000px;
+      height: 520px;
       border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 35px 45px 35px 45px;
+            padding: 40px 50px 40px 50px;
             display: flex;
-            gap: 28px;
+            gap: 35px;
             position: relative;
-            align-items: flex-start;
+            align-items: center;
             overflow: hidden;
     }
 
     .title {
       position: absolute;
-      top: 20px;
+      top: 30px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 700;
       letter-spacing: 2px;
       color: #cdbaff;
     }
 
     .avatar {
-            width: 140px;
-            height: 140px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
-            margin-top: 40px;
+            margin-top: 0;
+            flex-shrink: 0;
             box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
     }
 
@@ -310,10 +311,10 @@ async function generateIntroImage(userData) {
 
     .info {
             flex: 1;
-            margin-top: 35px;
+            margin-top: 65px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
     }
 
     .row {
