@@ -247,83 +247,83 @@ async function generateIntroImage(userData) {
         const avatarUrl = userData.avatarUrl || '';
 
         // HTML/CSS template
-        const htmlTemplate = `
+                const htmlTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      width: 1200px;
-      height: 600px;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at top, #1b1530, #0a0815);
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            width: 1400px;
+            height: 520px;
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top, #1b1530, #0a0815);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+        }
 
-    .card {
-      width: 1050px;
-      height: 550px;
-      border-radius: 20px;
+        .card {
+            width: 1320px;
+            height: 460px;
+            border-radius: 20px;
             border: 2px solid rgba(109,40,217,0.25);
-            padding: 30px 90px 30px 90px;
+            padding: 20px 60px;
             display: flex;
             gap: 40px;
             position: relative;
             align-items: center;
             overflow: hidden;
-    }
+        }
 
-    .title {
-      position: absolute;
-      top: 35px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: #cdbaff;
-      white-space: nowrap;
-    }
+        .title {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #cdbaff;
+            white-space: nowrap;
+        }
 
-    .avatar {
-            width: 170px;
-            height: 170px;
+        .avatar {
+            width: 190px;
+            height: 190px;
             border-radius: 50%;
             overflow: hidden;
             border: 3px solid rgba(255,255,255,0.06);
             margin-top: 0;
             flex-shrink: 0;
             box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
-    }
+        }
 
-    .avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-    .info {
+        .info {
             flex: 1;
-            margin-top: 65px;
+            margin-top: 36px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-    }
+            gap: 14px;
+        }
 
-    .row {
-      display: flex;
+        .row {
+            display: flex;
             margin-bottom: 0;
-      align-items: center;
-      flex-shrink: 0;
-    }
+            align-items: center;
+            flex-shrink: 0;
+        }
 
         .label {
             width: 150px;
@@ -347,15 +347,9 @@ async function generateIntroImage(userData) {
             text-overflow: ellipsis;
         }
 
-    .footer {
-      position: absolute;
-      bottom: 15px;
-      right: 30px;
-      font-size: 12px;
-      opacity: 0.6;
-      letter-spacing: 1px;
-      display: none;
-    }
+        .footer {
+            display: none;
+        }
     </style>
     </head>
     <body>
@@ -363,23 +357,22 @@ async function generateIntroImage(userData) {
         <div class="title">MEMBER INTRODUCTION</div>
 
         <div class="avatar">
-        <img src="{{AVATAR}}">
+            <img src="{{AVATAR}}">
         </div>
 
         <div class="info">
-        <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
-        <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
-        <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
-        <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
-        <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
+            <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
+            <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
+            <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
+            <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
+            <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
         </div>
 
-        <div class="footer">After Hours</div>
     </div>
     </body>
     </html>
 
-        `;
+                `;
 
         // Inline avatar image as data URL (safer than external loads) and inject values
         const escapeHtml = (str) => String(str)
