@@ -247,155 +247,139 @@ async function generateIntroImage(userData) {
         const avatarUrl = userData.avatarUrl || '';
 
         // HTML/CSS template
-                const htmlTemplate = `
+        const htmlTemplate = `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            width: 1280px;
-            height: 520px;
-            font-family: 'Poppins', sans-serif;
-            background: radial-gradient(circle at top, #0f0b14, #0a0811);
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-        }
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 1200px;
+      height: 600px;
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #1b1530, #0a0815);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+    }
 
-        .card {
-            width: 1200px;
-            height: 440px;
-            border-radius: 18px;
-            border: 2px solid rgba(109,40,217,0.18);
-            padding: 56px 48px 28px;
+    .card {
+      width: 1050px;
+      height: 550px;
+      border-radius: 20px;
+            border: 2px solid rgba(109,40,217,0.25);
+            padding: 30px 90px 30px 90px;
             display: flex;
-            gap: 32px;
+            gap: 40px;
             position: relative;
             align-items: center;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
-        }
+    }
 
-        .title {
-            position: absolute;
-            top: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 40px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            color: #e6d8ff;
-            text-transform: uppercase;
-            padding-bottom: 6px;
-            border-bottom: 3px solid rgba(183,150,255,0.08);
-            width: auto;
-            white-space: nowrap;
-            text-align: center;
-        }
+    .title {
+      position: absolute;
+      top: 35px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #cdbaff;
+      white-space: nowrap;
+    }
 
-        .avatar-wrap {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            width: 240px;
-            min-width: 240px;
-        }
-
-        .avatar {
+    .avatar {
             width: 170px;
             height: 170px;
             border-radius: 50%;
             overflow: hidden;
-            box-shadow: 0 0 0 6px rgba(109,40,217,0.12), 0 0 0 12px rgba(109,40,217,0.04) inset;
-            border: 4px solid rgba(109,40,217,0.08);
+            border: 3px solid rgba(255,255,255,0.06);
+            margin-top: 0;
             flex-shrink: 0;
-        }
+            box-shadow: inset 0 6px 18px rgba(0,0,0,0.6);
+    }
 
-        .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-        .divider {
-            width: 1px;
-            height: 260px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-            margin: 0 28px;
-        }
-
-        .info {
+    .info {
             flex: 1;
-            margin-top: 24px;
+            margin-top: 65px;
             display: flex;
             flex-direction: column;
-            gap: 18px;
-        }
+            gap: 16px;
+    }
 
-        .row {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
+    .row {
+      display: flex;
+            margin-bottom: 0;
+      align-items: center;
+      flex-shrink: 0;
+    }
 
         .label {
-            width: 160px;
-            color: #cdbaff;
-            font-weight: 800;
-            letter-spacing: 1.6px;
+            width: 150px;
+            color: #bda9ff;
+            font-weight: 700;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .value {
             flex: 1;
-            background: rgba(255,255,255,0.02);
-            padding: 12px 18px;
+            background: rgba(255,255,255,0.03);
+            padding: 12px 16px;
             border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.02);
-            color: #e8def8;
+            border: 1px solid rgba(255,255,255,0.03);
+            color: #ffffff;
             font-size: 18px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .footer { display: none; }
+    .footer {
+      position: absolute;
+      bottom: 15px;
+      right: 30px;
+      font-size: 12px;
+      opacity: 0.6;
+      letter-spacing: 1px;
+      display: none;
+    }
     </style>
     </head>
     <body>
     <div class="card">
         <div class="title">MEMBER INTRODUCTION</div>
 
-        <div class="avatar-wrap">
-            <div class="avatar">
-                <img src="{{AVATAR}}">
-            </div>
+        <div class="avatar">
+        <img src="{{AVATAR}}">
         </div>
-
-        <div class="divider"></div>
 
         <div class="info">
-            <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
-            <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
-            <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
-            <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
-            <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
+        <div class="row"><div class="label">NAME</div><div class="value">{{NAME}}</div></div>
+        <div class="row"><div class="label">AGE</div><div class="value">{{AGE}}</div></div>
+        <div class="row"><div class="label">GENDER</div><div class="value">{{GENDER}}</div></div>
+        <div class="row"><div class="label">CITY</div><div class="value">{{CITY}}</div></div>
+        <div class="row"><div class="label">HOBBY</div><div class="value">{{HOBBY}}</div></div>
         </div>
 
+        <div class="footer">After Hours</div>
     </div>
     </body>
     </html>
 
-                `;
+        `;
 
         // Inline avatar image as data URL (safer than external loads) and inject values
         const escapeHtml = (str) => String(str)
