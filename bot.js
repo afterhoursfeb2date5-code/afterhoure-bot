@@ -1659,7 +1659,7 @@ client.on('interactionCreate', async (interaction) => {
                 const introEmbed = new EmbedBuilder()
                     .setColor(colorDark)
                     .setAuthor({
-                        name: "INTRODUCTION CARD!",
+                        name: "Introduction Card!",
                         iconURL: "https://i.imgur.com/U76N6jc.png"
                     })
                     .setThumbnail(interaction.user.displayAvatarURL())
