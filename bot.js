@@ -1658,10 +1658,7 @@ client.on('interactionCreate', async (interaction) => {
                 const dateStr = new Date().toLocaleDateString('en-GB'); // dd/mm/YYYY
                 const introEmbed = new EmbedBuilder()
                     .setColor(colorDark)
-                    .setAuthor({
-                        name: "<@&1468612066331066490> CARD",
-                        iconURL: "https://i.imgur.com/U76N6jc.png"
-                    })
+                    .setDescription(`<@&1468612066331066490> CARD`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
                         { name: 'Name', value: `\`\`\`${name}\`\`\``, inline: true },
