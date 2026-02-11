@@ -1925,6 +1925,14 @@ client.on('interactionCreate', async (interaction) => {
                 modal.addComponents(row1, row2, row3);
 
                 await interaction.showModal(modal);
+
+                // Try to remove the original age-select message so it's not left visible
+                // (works for ephemeral responses; swallow any errors)
+                try {
+                    await interaction.deleteReply().catch(() => {});
+                } catch (e) {
+                    // ignore
+                }
             }
         } catch (error) {
             console.error('Error handling string select menu:', error);
