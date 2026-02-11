@@ -1658,16 +1658,15 @@ client.on('interactionCreate', async (interaction) => {
                 const dateStr = new Date().toLocaleDateString('en-GB'); // dd/mm/YYYY
                 const introEmbed = new EmbedBuilder()
                     .setColor(colorDark)
-                    .setDescription(`New Ourams at ${interaction.guild.name}`)
+                    .setDescription(`New <@&1468612066331066490> at ${interaction.guild.name}`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
-                        { name: '👤 Name', value: `\`\`\`${name}\`\`\``, inline: true },
-                        { name: '🎂 Age', value: `\`\`\`${age}\`\`\``, inline: true },
-                        { name: '🎮 Hobby', value: `\`\`\`${hobby}\`\`\``, inline: false },
-                        { name: '📝 About Me', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
+                        { name: 'Name', value: `\`\`\`${name}\`\`\``, inline: true },
+                        { name: 'Age', value: `\`\`\`${age}\`\`\``, inline: true },
+                        { name: 'Hobby', value: `\`\`\`${hobby}\`\`\``, inline: false },
+                        { name: 'About Me', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
                     )
                     .setFooter({ text: `Intro dari ${interaction.user.username} • ${dateStr}`, iconURL: interaction.user.displayAvatarURL() })
-                    .setTimestamp();
 
                 // Create introduction button for starting intro process
                 const introButton = new ButtonBuilder()
@@ -1835,13 +1834,12 @@ client.on('interactionCreate', async (interaction) => {
                     .setDescription(`Halo! Selamat datang 👋`)
                     .setThumbnail(intro.avatar)
                     .addFields(
-                        { name: '👤 Nama', value: `\`\`\`${intro.name}\`\`\``, inline: true },
-                        { name: '🎂 Umur', value: `\`\`\`${intro.age}\`\`\``, inline: true },
-                        { name: '🎮 Hobby', value: `\`\`\`${intro.hobby}\`\`\``, inline: false },
-                        { name: '📝 Tentang Saya', value: `\`\`\`${intro.about || '-'}\`\`\``, inline: false }
+                        { name: 'Name', value: `\`\`\`${intro.name}\`\`\``, inline: true },
+                        { name: 'Age', value: `\`\`\`${intro.age}\`\`\``, inline: true },
+                        { name: 'Hobby', value: `\`\`\`${intro.hobby}\`\`\``, inline: false },
+                        { name: 'About Me', value: `\`\`\`${intro.about || '-'}\`\`\``, inline: false }
                     )
                     .setFooter({ text: `Intro dari ${intro.username} • ${dateStrProfile}`, iconURL: intro.avatar })
-                    .setTimestamp(new Date(intro.submittedAt));
 
                 await interaction.reply({
                     embeds: [profileEmbed],
