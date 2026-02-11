@@ -1669,7 +1669,7 @@ client.on('interactionCreate', async (interaction) => {
                         { name: 'Hobby', value: `\`\`\`${hobby}\`\`\``, inline: false },
                         { name: 'About Me', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
                     )
-                    .setFooter({ text: `Intro dari ${interaction.user.username} • ${dateStr}`, iconURL: interaction.user.displayAvatarURL() })
+                    .setFooter({ text: `Intro dari ${interaction.user.username} • ${dateStr}`})
 
                 // Create introduction button for starting intro process
                 const introButton = new ButtonBuilder()
