@@ -1658,7 +1658,8 @@ client.on('interactionCreate', async (interaction) => {
                 const dateStr = new Date().toLocaleDateString('en-GB'); // dd/mm/YYYY
                 const introEmbed = new EmbedBuilder()
                     .setColor(colorDark)
-                    .setDescription(`New <@&1468612066331066490> at ${interaction.guild.name}`)
+                    .setDescription(`<@&1468612066331066490> CARD`)
+                    .setDescription(`${interaction.guild.name}`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
                         { name: 'Name', value: `\`\`\`${name}\`\`\``, inline: true },
