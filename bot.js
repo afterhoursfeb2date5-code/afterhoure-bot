@@ -1658,14 +1658,13 @@ client.on('interactionCreate', async (interaction) => {
                 const dateStr = new Date().toLocaleDateString('en-GB'); // dd/mm/YYYY
                 const introEmbed = new EmbedBuilder()
                     .setColor(colorDark)
-                    .setTitle(`✨ ${name}`)
-                    .setDescription(`Halo! Selamat datang di ${interaction.guild.name} 👋`)
+                    .setDescription(`New Ourams at ${interaction.guild.name}`)
                     .setThumbnail(interaction.user.displayAvatarURL())
                     .addFields(
-                        { name: '👤 Nama', value: `\`\`\`${name}\`\`\``, inline: true },
-                        { name: '🎂 Umur', value: `\`\`\`${age}\`\`\``, inline: true },
+                        { name: '👤 Name', value: `\`\`\`${name}\`\`\``, inline: true },
+                        { name: '🎂 Age', value: `\`\`\`${age}\`\`\``, inline: true },
                         { name: '🎮 Hobby', value: `\`\`\`${hobby}\`\`\``, inline: false },
-                        { name: '📝 Tentang Saya', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
+                        { name: '📝 About Me', value: `\`\`\`${about || '-'}\`\`\``, inline: false }
                     )
                     .setFooter({ text: `Intro dari ${interaction.user.username} • ${dateStr}`, iconURL: interaction.user.displayAvatarURL() })
                     .setTimestamp();
@@ -1673,9 +1672,9 @@ client.on('interactionCreate', async (interaction) => {
                 // Create introduction button for starting intro process
                 const introButton = new ButtonBuilder()
                     .setCustomId('start_intro_button')
-                    .setLabel('Introduction')
+                    .setLabel('Introduction Yourself')
                     .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('📣');
+                    .setEmoji('<:Intro:1470932555984273408>');
 
                 const row = new ActionRowBuilder().addComponents(introButton);
 
