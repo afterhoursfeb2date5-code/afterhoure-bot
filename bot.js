@@ -1523,8 +1523,7 @@ client.on('interactionCreate', async (interaction) => {
                 }
 
                 // Create the embed
-                const embed = new EmbedBuilder()
-                    .setTimestamp();
+                const embed = new EmbedBuilder();
 
                 if (title) embed.setTitle(title);
                 if (description) embed.setDescription(description);
@@ -1536,10 +1535,11 @@ client.on('interactionCreate', async (interaction) => {
                     }
                 }
                 if (imageUrl) embed.setImage(imageUrl);
+                const footerIcon = 'https://i.imgur.com/U76N6jc.png';
                 if (footerText) {
-                    embed.setFooter({ text: footerText });
+                    embed.setFooter({ text: footerText, iconURL: footerIcon });
                 } else {
-                    embed.setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬' });
+                    embed.setFooter({ text: '𝐀 𝐟 𝐭 𝐞 𝐫 — 𝐇 𝐨 𝐮 𝐫 𝐬', iconURL: footerIcon });
                 }
 
                 // Create preview with buttons
