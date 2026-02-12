@@ -510,7 +510,11 @@ const commands = [
                 .addStringOption(option =>
                     option.setName('message_id')
                         .setDescription('Message ID to setup reaction role on')
-                        .setRequired(true)))
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('parent_role_id')
+                        .setDescription('Parent role ID (optional - auto-given with child role)')
+                        .setRequired(false)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
@@ -1561,6 +1565,7 @@ client.on('interactionCreate', async (interaction) => {
             if (subcommand === 'setup') {
                 try {
                     const messageId = interaction.options.getString('message_id');
+                    const parentRoleId = interaction.options.getString('parent_role_id');
 
                     // Verify message exists
                     let message;
@@ -1573,6 +1578,17 @@ client.on('interactionCreate', async (interaction) => {
                         });
                     }
 
+                    // Verify parent role exists if provided
+                    if (parentRoleId) {
+                        const role = interaction.guild.roles.cache.get(parentRoleId);
+                        if (!role) {
+                            return await interaction.reply({
+                                content: '❌ Parent role ID tidak valid!',
+                                flags: 64
+                            });
+                        }
+                    }
+
                     // Initialize temp storage for this user
                     if (!client._reactionRoleSetup) {
                         client._reactionRoleSetup = new Map();
@@ -1580,7 +1596,7 @@ client.on('interactionCreate', async (interaction) => {
 
                     // Create modal
                     const modal = new ModalBuilder()
-                        .setCustomId(`reaction_role_modal_${messageId}`)
+                        .setCustomId(`reaction_role_modal_${messageId}_${parentRoleId || 'none'}`)
                         .setTitle('Setup Reaction Roles');
 
                     const instructions = new TextInputBuilder()
@@ -1615,14 +1631,27 @@ client.on('interactionCreate', async (interaction) => {
                         });
                     }
 
-                    const mappings = reactionRoles[messageId];
+                    const config = reactionRoles[messageId];
                     const listEmbed = new EmbedBuilder()
                         .setColor('#00D9FF')
                         .setTitle('📋 Reaction Role Mappings')
                         .setDescription(`Message ID: \`${messageId}\``)
                         .setTimestamp();
 
+                    // Show parent role if exists
+                    if (config.parentRole) {
+                        const parentRole = interaction.guild.roles.cache.get(config.parentRole);
+                        listEmbed.addFields({
+                            name: '👑 Parent Role',
+                            value: `<@&${config.parentRole}> (${parentRole?.name || 'Unknown'})`,
+                            inline: false
+                        });
+                    }
+
+                    // Show child roles
+                    const mappings = config.roles || config; // Support old format too
                     for (const [emoji, roleId] of Object.entries(mappings)) {
+                        if (emoji === 'parentRole') continue; // Skip parentRole field
                         const role = interaction.guild.roles.cache.get(roleId);
                         const roleDisplay = role ? role.name : `Unknown (${roleId})`;
                         listEmbed.addFields({
@@ -1648,17 +1677,35 @@ client.on('interactionCreate', async (interaction) => {
                     const emoji = interaction.options.getString('emoji');
                     const reactionRoles = client.reactionRoles || {};
 
-                    if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+                    if (!reactionRoles[messageId]) {
+                        return await interaction.reply({
+                            content: `❌ Message ID tidak ditemukan!`,
+                            flags: 64
+                        });
+                    }
+
+                    const config = reactionRoles[messageId];
+                    const roles = config.roles || config;
+
+                    if (!roles[emoji]) {
                         return await interaction.reply({
                             content: `❌ Emoji \`${emoji}\` tidak ditemukan untuk message ini!`,
                             flags: 64
                         });
                     }
 
-                    delete reactionRoles[messageId][emoji];
+                    delete roles[emoji];
+
+                    // Jika roles ada, update dengan struktur baru
+                    if (config.roles) {
+                        config.roles = roles;
+                    } else {
+                        // Update old format
+                        reactionRoles[messageId] = roles;
+                    }
 
                     // Jika tidak ada emoji lagi, hapus message entry
-                    if (Object.keys(reactionRoles[messageId]).length === 0) {
+                    if (Object.keys(roles).length === 0) {
                         delete reactionRoles[messageId];
                     }
 
@@ -1916,7 +1963,11 @@ client.on('interactionCreate', async (interaction) => {
         // Reaction Role Modal Handler
         if (interaction.customId.startsWith('reaction_role_modal_')) {
             try {
-                const messageId = interaction.customId.replace('reaction_role_modal_', '');
+                // Parse messageId and parentRoleId from customId
+                const customIdParts = interaction.customId.replace('reaction_role_modal_', '').split('_');
+                const messageId = customIdParts.slice(0, -1).join('_'); // In case messageId has underscores
+                const parentRoleId = customIdParts[customIdParts.length - 1] === 'none' ? null : customIdParts[customIdParts.length - 1];
+
                 const input = interaction.fields.getTextInputValue('rr_instructions');
 
                 // Parse input
@@ -1966,9 +2017,12 @@ client.on('interactionCreate', async (interaction) => {
                     });
                 }
 
-                // Save to file
+                // Save to file with new structure
                 const reactionRoles = client.reactionRoles || {};
-                reactionRoles[messageId] = mappings;
+                reactionRoles[messageId] = {
+                    parentRole: parentRoleId,
+                    roles: mappings
+                };
                 client.reactionRoles = reactionRoles;
                 saveReactionRoles(reactionRoles);
 
@@ -1982,11 +2036,16 @@ client.on('interactionCreate', async (interaction) => {
                     console.error('Error adding reactions:', error);
                 }
 
+                const parentRoleDisplay = parentRoleId ? `<@&${parentRoleId}>` : 'None';
                 const successEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
                     .setTitle('✅ Reaction Roles Setup')
                     .setDescription(`Berhasil setup reaction roles untuk message!`)
                     .addFields({
+                        name: 'Parent Role',
+                        value: parentRoleDisplay,
+                        inline: true
+                    }, {
                         name: 'Emoji-Role Mappings',
                         value: Object.entries(mappings).map(([emoji, roleId]) => {
                             const role = interaction.guild.roles.cache.get(roleId);
@@ -2646,27 +2705,45 @@ client.on('messageReactionAdd', async (reaction, user) => {
         const reactionRoles = client.reactionRoles || {};
 
         // Check if this message has reaction roles
-        if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+        if (!reactionRoles[messageId]) {
             return;
         }
 
-        // Get the role ID
-        const roleId = reactionRoles[messageId][emoji];
+        // Support both old and new data structures
+        const config = reactionRoles[messageId];
+        const roles = config.roles || config;
+        const parentRoleId = config.parentRole || null;
+
+        if (!roles[emoji]) {
+            return;
+        }
+
+        // Get the role IDs
+        const childRoleId = roles[emoji];
         const guild = reaction.message.guild;
         const member = await guild.members.fetch(user.id);
-        const role = guild.roles.cache.get(roleId);
+        const childRole = guild.roles.cache.get(childRoleId);
+        const parentRole = parentRoleId ? guild.roles.cache.get(parentRoleId) : null;
 
-        if (!role) {
-            console.warn(`Role ${roleId} not found for message ${messageId}`);
+        if (!childRole) {
+            console.warn(`Role ${childRoleId} not found for message ${messageId}`);
             return;
         }
 
-        // Add role to user
-        await member.roles.add(role).catch(error => {
-            console.error(`Error adding role ${role.name} to ${user.tag}:`, error.message);
+        // Add child role to user
+        await member.roles.add(childRole).catch(error => {
+            console.error(`Error adding role ${childRole.name} to ${user.tag}:`, error.message);
         });
 
-        console.log(`✅ Added role ${role.name} to ${user.tag}`);
+        // Add parent role if exists
+        if (parentRole && !member.roles.cache.has(parentRoleId)) {
+            await member.roles.add(parentRole).catch(error => {
+                console.error(`Error adding parent role ${parentRole.name} to ${user.tag}:`, error.message);
+            });
+            console.log(`✅ Added role ${childRole.name} + ${parentRole.name} to ${user.tag}`);
+        } else {
+            console.log(`✅ Added role ${childRole.name} to ${user.tag}`);
+        }
     } catch (error) {
         console.error('Error handling message reaction add:', error);
     }
@@ -2688,27 +2765,54 @@ client.on('messageReactionRemove', async (reaction, user) => {
         const reactionRoles = client.reactionRoles || {};
 
         // Check if this message has reaction roles
-        if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+        if (!reactionRoles[messageId]) {
             return;
         }
 
-        // Get the role ID
-        const roleId = reactionRoles[messageId][emoji];
+        // Support both old and new data structures
+        const config = reactionRoles[messageId];
+        const roles = config.roles || config;
+        const parentRoleId = config.parentRole || null;
+
+        if (!roles[emoji]) {
+            return;
+        }
+
+        // Get the role IDs
+        const childRoleId = roles[emoji];
         const guild = reaction.message.guild;
         const member = await guild.members.fetch(user.id);
-        const role = guild.roles.cache.get(roleId);
+        const childRole = guild.roles.cache.get(childRoleId);
+        const parentRole = parentRoleId ? guild.roles.cache.get(parentRoleId) : null;
 
-        if (!role) {
-            console.warn(`Role ${roleId} not found for message ${messageId}`);
+        if (!childRole) {
+            console.warn(`Role ${childRoleId} not found for message ${messageId}`);
             return;
         }
 
-        // Remove role from user
-        await member.roles.remove(role).catch(error => {
-            console.error(`Error removing role ${role.name} from ${user.tag}:`, error.message);
+        // Remove child role from user
+        await member.roles.remove(childRole).catch(error => {
+            console.error(`Error removing role ${childRole.name} from ${user.tag}:`, error.message);
         });
 
-        console.log(`✅ Removed role ${role.name} from ${user.tag}`);
+        // Check if user has any other child roles from this message's configuration
+        let hasOtherChildRole = false;
+        for (const [otherEmoji, otherRoleId] of Object.entries(roles)) {
+            if (otherEmoji !== emoji && member.roles.cache.has(otherRoleId)) {
+                hasOtherChildRole = true;
+                break;
+            }
+        }
+
+        // Remove parent role if user doesn't have any other child roles
+        if (parentRole && !hasOtherChildRole) {
+            await member.roles.remove(parentRole).catch(error => {
+                console.error(`Error removing parent role ${parentRole.name} from ${user.tag}:`, error.message);
+            });
+            console.log(`✅ Removed role ${childRole.name} (and ${parentRole.name} - no other child roles) from ${user.tag}`);
+        } else {
+            console.log(`✅ Removed role ${childRole.name} from ${user.tag}`);
+        }
     } catch (error) {
         console.error('Error handling message reaction remove:', error);
     }
