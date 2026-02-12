@@ -14,7 +14,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildMessageReactions
     ] 
 });
 
@@ -227,7 +228,28 @@ function saveIntroductions(introductions) {
     }
 }
 
+// Reaction Roles functions
+const REACTION_ROLES_FILE = path.join(CONFIG_DIR, 'reaction-roles.json');
 
+function loadReactionRoles() {
+    try {
+        if (fs.existsSync(REACTION_ROLES_FILE)) {
+            return JSON.parse(fs.readFileSync(REACTION_ROLES_FILE, 'utf8'));
+        }
+        return {};
+    } catch (error) {
+        console.error('Error loading reaction roles:', error);
+        return {};
+    }
+}
+
+function saveReactionRoles(reactionRoles) {
+    try {
+        fs.writeFileSync(REACTION_ROLES_FILE, JSON.stringify(reactionRoles, null, 2), 'utf8');
+    } catch (error) {
+        console.error('Error saving reaction roles:', error);
+    }
+}
 
 // User points config
 
@@ -478,6 +500,38 @@ const commands = [
     new SlashCommandBuilder()
         .setName('introduction')
         .setDescription('Create your introduction card'),
+    new SlashCommandBuilder()
+        .setName('reaction-role')
+        .setDescription('Manage reaction roles')
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('setup')
+                .setDescription('Setup reaction role for a message')
+                .addStringOption(option =>
+                    option.setName('message_id')
+                        .setDescription('Message ID to setup reaction role on')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('List all reaction-role mappings for a message')
+                .addStringOption(option =>
+                    option.setName('message_id')
+                        .setDescription('Message ID to list')
+                        .setRequired(true)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('remove')
+                .setDescription('Remove a reaction-role mapping')
+                .addStringOption(option =>
+                    option.setName('message_id')
+                        .setDescription('Message ID')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('emoji')
+                        .setDescription('Emoji to remove')
+                        .setRequired(true)))
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -702,6 +756,7 @@ client.once('clientReady', () => {
     client.logsConfig = loadLogsConfig();
     client.autoResponses = loadAutoResponses();
     client.introductions = loadIntroductions();
+    client.reactionRoles = loadReactionRoles();
     // Temp storage while user memilih age sebelum submit modal
     client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
@@ -1500,6 +1555,137 @@ client.on('interactionCreate', async (interaction) => {
             }
         }
 
+        if (commandName === 'reaction-role') {
+            const subcommand = interaction.options.getSubcommand();
+
+            if (subcommand === 'setup') {
+                try {
+                    const messageId = interaction.options.getString('message_id');
+
+                    // Verify message exists
+                    let message;
+                    try {
+                        message = await interaction.channel.messages.fetch(messageId);
+                    } catch (error) {
+                        return await interaction.reply({
+                            content: '❌ Message tidak ditemukan! Pastikan message ID valid dan di channel ini.',
+                            flags: 64
+                        });
+                    }
+
+                    // Initialize temp storage for this user
+                    if (!client._reactionRoleSetup) {
+                        client._reactionRoleSetup = new Map();
+                    }
+
+                    // Create modal
+                    const modal = new ModalBuilder()
+                        .setCustomId(`reaction_role_modal_${messageId}`)
+                        .setTitle('Setup Reaction Roles');
+
+                    const instructions = new TextInputBuilder()
+                        .setCustomId('rr_instructions')
+                        .setLabel('Format: emoji:@role (e.g., 🎮:@Gamers)')
+                        .setStyle(TextInputStyle.Paragraph)
+                        .setPlaceholder('🎮:@Gamers\n🎨:@Artists\n🎵:@Music Lovers')
+                        .setRequired(true);
+
+                    const row = new ActionRowBuilder().addComponents(instructions);
+                    modal.addComponents(row);
+
+                    await interaction.showModal(modal);
+                } catch (error) {
+                    console.error('Error in reaction-role setup:', error);
+                    await interaction.reply({
+                        content: `❌ Error: ${error.message}`,
+                        flags: 64
+                    });
+                }
+            }
+
+            else if (subcommand === 'list') {
+                try {
+                    const messageId = interaction.options.getString('message_id');
+                    const reactionRoles = client.reactionRoles || {};
+
+                    if (!reactionRoles[messageId]) {
+                        return await interaction.reply({
+                            content: '❌ Tidak ada reaction role setup untuk message ini!',
+                            flags: 64
+                        });
+                    }
+
+                    const mappings = reactionRoles[messageId];
+                    const listEmbed = new EmbedBuilder()
+                        .setColor('#00D9FF')
+                        .setTitle('📋 Reaction Role Mappings')
+                        .setDescription(`Message ID: \`${messageId}\``)
+                        .setTimestamp();
+
+                    for (const [emoji, roleId] of Object.entries(mappings)) {
+                        const role = interaction.guild.roles.cache.get(roleId);
+                        const roleDisplay = role ? role.name : `Unknown (${roleId})`;
+                        listEmbed.addFields({
+                            name: emoji,
+                            value: `<@&${roleId}> (${roleDisplay})`,
+                            inline: false
+                        });
+                    }
+
+                    await interaction.reply({ embeds: [listEmbed], flags: 64 });
+                } catch (error) {
+                    console.error('Error listing reaction roles:', error);
+                    await interaction.reply({
+                        content: `❌ Error: ${error.message}`,
+                        flags: 64
+                    });
+                }
+            }
+
+            else if (subcommand === 'remove') {
+                try {
+                    const messageId = interaction.options.getString('message_id');
+                    const emoji = interaction.options.getString('emoji');
+                    const reactionRoles = client.reactionRoles || {};
+
+                    if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+                        return await interaction.reply({
+                            content: `❌ Emoji \`${emoji}\` tidak ditemukan untuk message ini!`,
+                            flags: 64
+                        });
+                    }
+
+                    delete reactionRoles[messageId][emoji];
+
+                    // Jika tidak ada emoji lagi, hapus message entry
+                    if (Object.keys(reactionRoles[messageId]).length === 0) {
+                        delete reactionRoles[messageId];
+                    }
+
+                    client.reactionRoles = reactionRoles;
+                    saveReactionRoles(reactionRoles);
+
+                    const removeEmbed = new EmbedBuilder()
+                        .setColor('#FF0000')
+                        .setTitle('✅ Reaction Role Dihapus')
+                        .addFields({
+                            name: 'Emoji',
+                            value: emoji,
+                            inline: true
+                        })
+                        .setTimestamp();
+
+                    await interaction.reply({ embeds: [removeEmbed], flags: 64 });
+                } catch (error) {
+                    console.error('Error removing reaction role:', error);
+                    await interaction.reply({
+                        content: `❌ Error: ${error.message}`,
+                        flags: 64
+                    });
+                }
+            }
+        }
+
 
 
     }
@@ -1720,6 +1906,99 @@ client.on('interactionCreate', async (interaction) => {
                 }, 3000);
             } catch (error) {
                 console.error('Error processing introduction:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        // Reaction Role Modal Handler
+        if (interaction.customId.startsWith('reaction_role_modal_')) {
+            try {
+                const messageId = interaction.customId.replace('reaction_role_modal_', '');
+                const input = interaction.fields.getTextInputValue('rr_instructions');
+
+                // Parse input
+                const lines = input.split('\n').filter(line => line.trim());
+                const mappings = {};
+
+                for (const line of lines) {
+                    const parts = line.split(':').map(p => p.trim());
+                    if (parts.length !== 2) {
+                        return await interaction.reply({
+                            content: `❌ Format tidak valid! Gunakan format: emoji:@role\nContoh: 🎮:@Gamers`,
+                            flags: 64
+                        });
+                    }
+
+                    const emoji = parts[0];
+                    const roleInput = parts[1];
+
+                    // Parse role (remove @ if present)
+                    let role;
+                    const roleQuery = roleInput.replace(/^@/, '').trim();
+
+                    // Try to find role by mention first
+                    if (roleInput.match(/^<@&(\d+)>$/)) {
+                        const roleId = roleInput.match(/^<@&(\d+)>$/)[1];
+                        role = interaction.guild.roles.cache.get(roleId);
+                    }
+                    // Try to find role by name
+                    else {
+                        role = interaction.guild.roles.cache.find(r => r.name.toLowerCase() === roleQuery.toLowerCase());
+                    }
+
+                    if (!role) {
+                        return await interaction.reply({
+                            content: `❌ Role "${roleQuery}" tidak ditemukan!`,
+                            flags: 64
+                        });
+                    }
+
+                    mappings[emoji] = role.id;
+                }
+
+                if (Object.keys(mappings).length === 0) {
+                    return await interaction.reply({
+                        content: '❌ Tidak ada mapping yang valid!',
+                        flags: 64
+                    });
+                }
+
+                // Save to file
+                const reactionRoles = client.reactionRoles || {};
+                reactionRoles[messageId] = mappings;
+                client.reactionRoles = reactionRoles;
+                saveReactionRoles(reactionRoles);
+
+                // Add reactions to message
+                try {
+                    const message = await interaction.channel.messages.fetch(messageId);
+                    for (const emoji of Object.keys(mappings)) {
+                        await message.react(emoji).catch(() => {});
+                    }
+                } catch (error) {
+                    console.error('Error adding reactions:', error);
+                }
+
+                const successEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Reaction Roles Setup')
+                    .setDescription(`Berhasil setup reaction roles untuk message!`)
+                    .addFields({
+                        name: 'Emoji-Role Mappings',
+                        value: Object.entries(mappings).map(([emoji, roleId]) => {
+                            const role = interaction.guild.roles.cache.get(roleId);
+                            return `${emoji} → ${role?.name || 'Unknown'}`;
+                        }).join('\n'),
+                        inline: false
+                    })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [successEmbed], flags: 64 });
+            } catch (error) {
+                console.error('Error processing reaction role modal:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
@@ -2348,6 +2627,90 @@ client.on('messageCreate', async (message) => {
         }
     } catch (error) {
         console.error('Error handling message:', error);
+    }
+});
+
+// Handle message reaction add
+client.on('messageReactionAdd', async (reaction, user) => {
+    try {
+        // Ignore bot reactions
+        if (user.bot) return;
+
+        // Ignore if message is partial
+        if (reaction.message.partial) {
+            await reaction.message.fetch();
+        }
+
+        const messageId = reaction.message.id;
+        const emoji = reaction.emoji.toString();
+        const reactionRoles = client.reactionRoles || {};
+
+        // Check if this message has reaction roles
+        if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+            return;
+        }
+
+        // Get the role ID
+        const roleId = reactionRoles[messageId][emoji];
+        const guild = reaction.message.guild;
+        const member = await guild.members.fetch(user.id);
+        const role = guild.roles.cache.get(roleId);
+
+        if (!role) {
+            console.warn(`Role ${roleId} not found for message ${messageId}`);
+            return;
+        }
+
+        // Add role to user
+        await member.roles.add(role).catch(error => {
+            console.error(`Error adding role ${role.name} to ${user.tag}:`, error.message);
+        });
+
+        console.log(`✅ Added role ${role.name} to ${user.tag}`);
+    } catch (error) {
+        console.error('Error handling message reaction add:', error);
+    }
+});
+
+// Handle message reaction remove
+client.on('messageReactionRemove', async (reaction, user) => {
+    try {
+        // Ignore bot reactions
+        if (user.bot) return;
+
+        // Ignore if message is partial
+        if (reaction.message.partial) {
+            await reaction.message.fetch();
+        }
+
+        const messageId = reaction.message.id;
+        const emoji = reaction.emoji.toString();
+        const reactionRoles = client.reactionRoles || {};
+
+        // Check if this message has reaction roles
+        if (!reactionRoles[messageId] || !reactionRoles[messageId][emoji]) {
+            return;
+        }
+
+        // Get the role ID
+        const roleId = reactionRoles[messageId][emoji];
+        const guild = reaction.message.guild;
+        const member = await guild.members.fetch(user.id);
+        const role = guild.roles.cache.get(roleId);
+
+        if (!role) {
+            console.warn(`Role ${roleId} not found for message ${messageId}`);
+            return;
+        }
+
+        // Remove role from user
+        await member.roles.remove(role).catch(error => {
+            console.error(`Error removing role ${role.name} from ${user.tag}:`, error.message);
+        });
+
+        console.log(`✅ Removed role ${role.name} from ${user.tag}`);
+    } catch (error) {
+        console.error('Error handling message reaction remove:', error);
     }
 });
 
