@@ -1963,6 +1963,9 @@ client.on('interactionCreate', async (interaction) => {
         // Reaction Role Modal Handler
         if (interaction.customId.startsWith('reaction_role_modal_')) {
             try {
+                // Defer reply immediately to avoid timeout
+                await interaction.deferReply({ ephemeral: true });
+
                 // Parse messageId and parentRoleId from customId (format: reaction_role_modal_messageId:parentRoleId)
                 const customIdContent = interaction.customId.replace('reaction_role_modal_', ''); // Remove prefix
                 const parts = customIdContent.split(':'); // Split by colon
@@ -1974,13 +1977,13 @@ client.on('interactionCreate', async (interaction) => {
                 // Parse input
                 const lines = input.split('\n').filter(line => line.trim());
                 const mappings = {};
+                const failedEmojis = [];
 
                 for (const line of lines) {
                     const parts = line.split(':').map(p => p.trim());
                     if (parts.length !== 2) {
-                        return await interaction.reply({
-                            content: `❌ Format tidak valid! Gunakan format: emoji:@role\nContoh: 🎮:@Gamers`,
-                            flags: 64
+                        return await interaction.editReply({
+                            content: `❌ Format tidak valid! Gunakan format: emoji:@role\nContoh: 🎮:@Gamers`
                         });
                     }
 
@@ -2002,9 +2005,8 @@ client.on('interactionCreate', async (interaction) => {
                     }
 
                     if (!role) {
-                        return await interaction.reply({
-                            content: `❌ Role "${roleQuery}" tidak ditemukan!`,
-                            flags: 64
+                        return await interaction.editReply({
+                            content: `❌ Role "${roleQuery}" tidak ditemukan!`
                         });
                     }
 
@@ -2012,9 +2014,8 @@ client.on('interactionCreate', async (interaction) => {
                 }
 
                 if (Object.keys(mappings).length === 0) {
-                    return await interaction.reply({
-                        content: '❌ Tidak ada mapping yang valid!',
-                        flags: 64
+                    return await interaction.editReply({
+                        content: '❌ Tidak ada mapping yang valid!'
                     });
                 }
 
@@ -2027,42 +2028,70 @@ client.on('interactionCreate', async (interaction) => {
                 client.reactionRoles = reactionRoles;
                 saveReactionRoles(reactionRoles);
 
-                // Add reactions to message
-                try {
-                    const message = await interaction.channel.messages.fetch(messageId);
+                // Add reactions to message with better error handling
+                let addedCount = 0;
+                const message = await interaction.channel.messages.fetch(messageId).catch(err => {
+                    failedEmojis.push(`❌ Message not found`);
+                    return null;
+                });
+
+                if (message) {
                     for (const emoji of Object.keys(mappings)) {
-                        await message.react(emoji).catch(() => {});
+                        try {
+                            // Validate emoji is not too long
+                            if (emoji.length > 100) {
+                                console.warn(`Emoji too long: ${emoji}`);
+                                failedEmojis.push(`⚠️ ${emoji} (terlalu panjang)`);
+                                continue;
+                            }
+
+                            await message.react(emoji);
+                            addedCount++;
+                            console.log(`✅ Added reaction ${emoji} to message`);
+                        } catch (error) {
+                            console.error(`Error adding reaction ${emoji}:`, error.message);
+                            failedEmojis.push(`⚠️ ${emoji} (${error.message})`);
+                        }
                     }
-                } catch (error) {
-                    console.error('Error adding reactions:', error);
                 }
 
                 const parentRoleDisplay = parentRoleId ? `<@&${parentRoleId}>` : 'None';
                 const successEmbed = new EmbedBuilder()
-                    .setColor('#00FF00')
-                    .setTitle('✅ Reaction Roles Setup')
-                    .setDescription(`Berhasil setup reaction roles untuk message!`)
+                    .setColor(failedEmojis.length > 0 ? '#FFAA00' : '#00FF00')
+                    .setTitle(failedEmojis.length > 0 ? '⚠️ Reaction Roles Setup (Partial)' : '✅ Reaction Roles Setup')
+                    .setDescription(`${addedCount} reactions berhasil ditambahkan${failedEmojis.length > 0 ? `, ${failedEmojis.length} gagal` : ''}`)
                     .addFields({
-                        name: 'Parent Role',
+                        name: '👑 Parent Role',
                         value: parentRoleDisplay,
                         inline: true
                     }, {
-                        name: 'Emoji-Role Mappings',
+                        name: '✅ Emoji-Role Mappings',
                         value: Object.entries(mappings).map(([emoji, roleId]) => {
                             const role = interaction.guild.roles.cache.get(roleId);
                             return `${emoji} → ${role?.name || 'Unknown'}`;
-                        }).join('\n'),
+                        }).join('\n') || 'None',
                         inline: false
-                    })
-                    .setTimestamp();
+                    });
 
-                await interaction.reply({ embeds: [successEmbed], flags: 64 });
+                if (failedEmojis.length > 0) {
+                    successEmbed.addFields({
+                        name: '⚠️ Failed Reactions',
+                        value: failedEmojis.join('\n'),
+                        inline: false
+                    });
+                }
+
+                successEmbed.setTimestamp();
+                await interaction.editReply({ embeds: [successEmbed] });
             } catch (error) {
                 console.error('Error processing reaction role modal:', error);
-                await interaction.reply({
-                    content: `❌ Error: ${error.message}`,
-                    flags: 64
-                });
+                try {
+                    await interaction.editReply({
+                        content: `❌ Error: ${error.message}`
+                    });
+                } catch (e) {
+                    console.error('Failed to send error reply:', e.message);
+                }
             }
         }
     }
