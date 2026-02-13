@@ -1596,7 +1596,7 @@ client.on('interactionCreate', async (interaction) => {
 
                     // Create modal
                     const modal = new ModalBuilder()
-                        .setCustomId(`reaction_role_modal_${messageId}_${parentRoleId || 'none'}`)
+                        .setCustomId(`reaction_role_modal_${messageId}:${parentRoleId || 'none'}`)
                         .setTitle('Setup Reaction Roles');
 
                     const instructions = new TextInputBuilder()
@@ -1963,10 +1963,11 @@ client.on('interactionCreate', async (interaction) => {
         // Reaction Role Modal Handler
         if (interaction.customId.startsWith('reaction_role_modal_')) {
             try {
-                // Parse messageId and parentRoleId from customId
-                const customIdParts = interaction.customId.replace('reaction_role_modal_', '').split('_');
-                const messageId = customIdParts.slice(0, -1).join('_'); // In case messageId has underscores
-                const parentRoleId = customIdParts[customIdParts.length - 1] === 'none' ? null : customIdParts[customIdParts.length - 1];
+                // Parse messageId and parentRoleId from customId (format: reaction_role_modal_messageId:parentRoleId)
+                const customIdContent = interaction.customId.replace('reaction_role_modal_', ''); // Remove prefix
+                const parts = customIdContent.split(':'); // Split by colon
+                const messageId = parts[0];
+                const parentRoleId = parts[1] === 'none' ? null : parts[1];
 
                 const input = interaction.fields.getTextInputValue('rr_instructions');
 
