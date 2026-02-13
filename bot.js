@@ -1601,9 +1601,9 @@ client.on('interactionCreate', async (interaction) => {
 
                     const instructions = new TextInputBuilder()
                         .setCustomId('rr_instructions')
-                        .setLabel('Format: emoji:@role (e.g., 🎮:@Gamers)')
+                        .setLabel('Format: emoji:@role')
                         .setStyle(TextInputStyle.Paragraph)
-                        .setPlaceholder('🎮:@Gamers\n🎨:@Artists\n🎵:@Music Lovers')
+                        .setPlaceholder('Standard emoji: 🎮:@Gamers\nCustom emoji: <:emoji_name:123456>:@Role\n🎨:@Artists')
                         .setRequired(true);
 
                     const row = new ActionRowBuilder().addComponents(instructions);
@@ -1974,21 +1974,36 @@ client.on('interactionCreate', async (interaction) => {
 
                 const input = interaction.fields.getTextInputValue('rr_instructions');
 
-                // Parse input
+                // Parse input dengan logic yang lebih smart untuk custom emoji
                 const lines = input.split('\n').filter(line => line.trim());
                 const mappings = {};
-                const failedEmojis = [];
+                const failedLines = [];
 
                 for (const line of lines) {
-                    const parts = line.split(':').map(p => p.trim());
-                    if (parts.length !== 2) {
-                        return await interaction.editReply({
-                            content: `❌ Format tidak valid! Gunakan format: emoji:@role\nContoh: 🎮:@Gamers`
-                        });
+                    // Handle custom emoji format: <:name:id>:@role atau standard emoji: 🎮:@role
+                    let emoji, roleInput;
+                    
+                    // Check if line contains custom emoji <:...:...>
+                    const customEmojiMatch = line.match(/^(<:[^:]+:\d+>)\s*:\s*(.+)$/);
+                    if (customEmojiMatch) {
+                        emoji = customEmojiMatch[1];
+                        roleInput = customEmojiMatch[2].trim();
+                    } else {
+                        // Standard emoji or Unicode
+                        const standardMatch = line.match(/^(.+?)\s*:\s*(.+)$/);
+                        if (!standardMatch) {
+                            failedLines.push(`❌ \`${line}\` - Format tidak valid`);
+                            continue;
+                        }
+                        emoji = standardMatch[1].trim();
+                        roleInput = standardMatch[2].trim();
                     }
 
-                    const emoji = parts[0];
-                    const roleInput = parts[1];
+                    // Validate emoji is not empty
+                    if (!emoji) {
+                        failedLines.push(`❌ Emoji tidak ditemukan`);
+                        continue;
+                    }
 
                     // Parse role (remove @ if present)
                     let role;
@@ -2005,9 +2020,14 @@ client.on('interactionCreate', async (interaction) => {
                     }
 
                     if (!role) {
-                        return await interaction.editReply({
-                            content: `❌ Role "${roleQuery}" tidak ditemukan!`
-                        });
+                        failedLines.push(`❌ ${emoji} → Role "${roleQuery}" tidak ditemukan!`);
+                        continue;
+                    }
+
+                    // Check if emoji already mapped (avoid duplicates)
+                    if (mappings[emoji]) {
+                        failedLines.push(`⚠️ ${emoji} → Sudah di-map ke role lain, skip`);
+                        continue;
                     }
 
                     mappings[emoji] = role.id;
@@ -2015,7 +2035,7 @@ client.on('interactionCreate', async (interaction) => {
 
                 if (Object.keys(mappings).length === 0) {
                     return await interaction.editReply({
-                        content: '❌ Tidak ada mapping yang valid!'
+                        content: `❌ Tidak ada mapping yang valid!\n${failedLines.join('\n')}`
                     });
                 }
 
@@ -2030,18 +2050,26 @@ client.on('interactionCreate', async (interaction) => {
 
                 // Add reactions to message with better error handling
                 let addedCount = 0;
+                const failedReactions = [...failedLines]; // Include parsing failures
+
                 const message = await interaction.channel.messages.fetch(messageId).catch(err => {
-                    failedEmojis.push(`❌ Message not found`);
+                    failedReactions.push(`❌ Message ID invalid - tidak bisa fetch message`);
                     return null;
                 });
 
                 if (message) {
                     for (const emoji of Object.keys(mappings)) {
                         try {
-                            // Validate emoji is not too long
+                            // Validate emoji is not empty
+                            if (!emoji || emoji.length === 0) {
+                                failedReactions.push(`❌ Empty emoji - skip`);
+                                continue;
+                            }
+
+                            // Validate emoji is not too long (reasonable limit)
                             if (emoji.length > 100) {
                                 console.warn(`Emoji too long: ${emoji}`);
-                                failedEmojis.push(`⚠️ ${emoji} (terlalu panjang)`);
+                                failedReactions.push(`⚠️ ${emoji} (terlalu panjang)`);
                                 continue;
                             }
 
@@ -2050,16 +2078,16 @@ client.on('interactionCreate', async (interaction) => {
                             console.log(`✅ Added reaction ${emoji} to message`);
                         } catch (error) {
                             console.error(`Error adding reaction ${emoji}:`, error.message);
-                            failedEmojis.push(`⚠️ ${emoji} (${error.message})`);
+                            failedReactions.push(`⚠️ ${emoji} → ${error.message}`);
                         }
                     }
                 }
 
                 const parentRoleDisplay = parentRoleId ? `<@&${parentRoleId}>` : 'None';
                 const successEmbed = new EmbedBuilder()
-                    .setColor(failedEmojis.length > 0 ? '#FFAA00' : '#00FF00')
-                    .setTitle(failedEmojis.length > 0 ? '⚠️ Reaction Roles Setup (Partial)' : '✅ Reaction Roles Setup')
-                    .setDescription(`${addedCount} reactions berhasil ditambahkan${failedEmojis.length > 0 ? `, ${failedEmojis.length} gagal` : ''}`)
+                    .setColor(failedReactions.length > 0 ? '#FFAA00' : '#00FF00')
+                    .setTitle(failedReactions.length > 0 ? '⚠️ Reaction Roles Setup (Partial)' : '✅ Reaction Roles Setup')
+                    .setDescription(`${addedCount} reactions berhasil ditambahkan${failedReactions.length > 0 ? `, ${failedReactions.length} gagal/error` : ''}`)
                     .addFields({
                         name: '👑 Parent Role',
                         value: parentRoleDisplay,
@@ -2073,12 +2101,34 @@ client.on('interactionCreate', async (interaction) => {
                         inline: false
                     });
 
-                if (failedEmojis.length > 0) {
-                    successEmbed.addFields({
-                        name: '⚠️ Failed Reactions',
-                        value: failedEmojis.join('\n'),
-                        inline: false
-                    });
+                if (failedReactions.length > 0) {
+                    // Split into multiple embeds if too many failures
+                    const failureTexts = [];
+                    let currentText = '';
+                    
+                    for (const fail of failedReactions) {
+                        if ((currentText + fail).length > 1024) {
+                            failureTexts.push(currentText);
+                            currentText = fail + '\n';
+                        } else {
+                            currentText += (currentText ? '\n' : '') + fail;
+                        }
+                    }
+                    if (currentText) failureTexts.push(currentText);
+
+                    if (failureTexts.length <= 2) {
+                        successEmbed.addFields({
+                            name: '⚠️ Issues',
+                            value: failureTexts.join('\n') || 'None',
+                            inline: false
+                        });
+                    } else {
+                        successEmbed.addFields({
+                            name: '⚠️ Issues (1/' + failureTexts.length + ')',
+                            value: failureTexts[0] || 'None',
+                            inline: false
+                        });
+                    }
                 }
 
                 successEmbed.setTimestamp();
