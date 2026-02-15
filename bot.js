@@ -1511,6 +1511,10 @@ client.on('interactionCreate', async (interaction) => {
                 }
                 client.voiceConnections.set(voiceChannel.guild.id, connection);
 
+                // Set connection in music system queue
+                const queue = client.musicSystem.getQueue(interaction.guildId);
+                queue.connection = connection;
+
                 const connectEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
                     .setTitle('✅ Bot Connected')
@@ -1542,6 +1546,11 @@ client.on('interactionCreate', async (interaction) => {
                 const connection = client.voiceConnections.get(guildId);
                 connection.destroy();
                 client.voiceConnections.delete(guildId);
+
+                // Clear music queue connection
+                const queue = client.musicSystem.getQueue(guildId);
+                queue.connection = null;
+                queue.playing = false;
 
                 const disconnectEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
