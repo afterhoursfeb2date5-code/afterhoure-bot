@@ -2933,6 +2933,16 @@ client.on('messageCreate', async (message) => {
 
                         const queueList = client.musicSystem.getFullQueue(message.guildId);
                         
+                        // Start playback if not playing
+                        if (!client.musicSystem.getQueue(message.guildId).playing && queueList.length === 1) {
+                            // Auto-play first song
+                            setTimeout(() => {
+                                client.musicSystem.playNextSong(message.guildId).catch(err => {
+                                    console.error('Auto-play error:', err);
+                                });
+                            }, 500);
+                        }
+                        
                         // Build embed with source info
                         let sourceEmoji = '▶️';
                         let sourceText = 'YouTube';

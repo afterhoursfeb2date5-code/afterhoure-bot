@@ -372,6 +372,77 @@ class MusicSystem {
         }
         return false;
     }
+
+    // Play next song
+    async playNextSong(guildId) {
+        const queue = this.getQueue(guildId);
+        
+        if (!queue.connection || queue.queue.length === 0) {
+            queue.playing = false;
+            return null;
+        }
+
+        queue.playing = true;
+        const song = queue.queue[0];
+
+        try {
+            // Create audio stream
+            const stream = ytdl(song.url, {
+                quality: 'highestaudio',
+                filter: 'audioonly',
+                highWaterMark: 1024 * 1024
+            });
+
+            // Create and play audio resource
+            const { createAudioResource } = require('@discordjs/voice');
+            const resource = createAudioResource(stream);
+            
+            if (!queue.player) {
+                const { createAudioPlayer } = require('@discordjs/voice');
+                queue.player = createAudioPlayer();
+                queue.connection.subscribe(queue.player);
+            }
+
+            queue.player.play(resource);
+            queue.current = song;
+
+            // Handle track end
+            queue.player.once('stateChange', (oldState, newState) => {
+                if (newState.status === 'idle') {
+                    queue.queue.shift();
+                    
+                    // Handle loop
+                    if (queue.loop === 'one') {
+                        queue.queue.unshift(song);
+                    } else if (queue.loop === 'all' && queue.queue.length === 0) {
+                        // Reload queue if all songs played and loop all
+                        return;
+                    }
+
+                    if (queue.queue.length > 0) {
+                        this.playNextSong(guildId);
+                    } else {
+                        queue.playing = false;
+                        queue.current = null;
+                    }
+                }
+            });
+
+            return song;
+        } catch (error) {
+            console.error(`Error playing song "${song.title}":`, error.message);
+            
+            // Skip to next song on error (e.g., 410 status from YouTube)
+            queue.queue.shift();
+            if (queue.queue.length > 0) {
+                return await this.playNextSong(guildId);
+            } else {
+                queue.playing = false;
+                queue.current = null;
+                return null;
+            }
+        }
+    }
 }
 
 module.exports = MusicSystem;
