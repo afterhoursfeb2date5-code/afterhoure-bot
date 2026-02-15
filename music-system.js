@@ -386,55 +386,76 @@ class MusicSystem {
         const song = queue.queue[0];
 
         try {
-            // Create audio stream
+            console.log(`🎵 Attempting to play: ${song.title}`);
+            
+            // Create audio stream from YouTube
             const stream = ytdl(song.url, {
                 quality: 'highestaudio',
                 filter: 'audioonly',
-                highWaterMark: 1024 * 1024
+                highWaterMark: 1024 * 1024 * 10,
+                dl_chunk_size: 512 * 1024
             });
 
-            // Create and play audio resource
-            const { createAudioResource } = require('@discordjs/voice');
+            stream.on('error', (err) => {
+                console.error(`Stream error for "${song.title}":`, err.message);
+            });
+
+            stream.on('end', () => {
+                console.log(`Stream ended for "${song.title}"`);
+            });
+
+            // Create audio resource
             const resource = createAudioResource(stream);
             
+            // Create player if doesn't exist
             if (!queue.player) {
-                const { createAudioPlayer } = require('@discordjs/voice');
                 queue.player = createAudioPlayer();
                 queue.connection.subscribe(queue.player);
+                console.log(`✅ Audio player created and subscribed`);
             }
 
+            // Play the resource
             queue.player.play(resource);
             queue.current = song;
+            console.log(`▶️ Now playing: ${song.title}`);
 
-            // Handle track end
-            queue.player.once('stateChange', (oldState, newState) => {
+            // Handle track end/idle
+            const idleHandler = async () => {
+                console.log(`⏭️ Track idle, moving to next...`);
+                queue.queue.shift();
+                
+                // Handle loop
+                if (queue.loop === 'one') {
+                    queue.queue.unshift(song);
+                }
+
+                if (queue.queue.length > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before next
+                    await this.playNextSong(guildId);
+                } else {
+                    queue.playing = false;
+                    queue.current = null;
+                    console.log('🛑 Queue finished');
+                }
+            };
+
+            // Replace old listeners
+            queue.player.removeAllListeners('stateChange');
+            queue.player.on('stateChange', (oldState, newState) => {
+                console.log(`Player state: ${oldState.status} → ${newState.status}`);
                 if (newState.status === 'idle') {
-                    queue.queue.shift();
-                    
-                    // Handle loop
-                    if (queue.loop === 'one') {
-                        queue.queue.unshift(song);
-                    } else if (queue.loop === 'all' && queue.queue.length === 0) {
-                        // Reload queue if all songs played and loop all
-                        return;
-                    }
-
-                    if (queue.queue.length > 0) {
-                        this.playNextSong(guildId);
-                    } else {
-                        queue.playing = false;
-                        queue.current = null;
-                    }
+                    idleHandler().catch(err => console.error('Idle handler error:', err));
                 }
             });
 
             return song;
         } catch (error) {
-            console.error(`Error playing song "${song.title}":`, error.message);
+            console.error(`❌ Error playing song "${song.title}":`, error.message);
             
-            // Skip to next song on error (e.g., 410 status from YouTube)
+            // Skip to next song on error
             queue.queue.shift();
             if (queue.queue.length > 0) {
+                console.log(`⏭️ Skipping to next due to error...`);
                 return await this.playNextSong(guildId);
             } else {
                 queue.playing = false;
