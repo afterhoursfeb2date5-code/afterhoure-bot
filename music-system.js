@@ -38,10 +38,35 @@ class MusicSystem {
     // Search YouTube
     async searchYouTube(query) {
         try {
-            const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
-            const videoIdMatch = response.data.match(/\\"\\"\\"\""\/watch\\?v=([a-zA-Z0-9_-]{11})/);
+            // Check if query is a direct YouTube URL
+            if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('youtube')) {
+                try {
+                    const info = await ytdl.getInfo(query);
+                    return {
+                        source: 'youtube',
+                        title: info.videoDetails.title,
+                        artist: info.videoDetails.author.name,
+                        url: query,
+                        duration: parseInt(info.videoDetails.lengthSeconds),
+                        thumbnail: info.videoDetails.thumbnail.thumbnails[0]?.url,
+                        videoId: info.videoDetails.videoId
+                    };
+                } catch (error) {
+                    console.error('Error parsing direct YouTube URL:', error.message);
+                }
+            }
+
+            // Search YouTube using a simpler approach
+            const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                }
+            });
             
-            if (!videoIdMatch) return null;
+            // Better regex pattern to find videoId
+            const videoIdMatch = response.data.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
+            
+            if (!videoIdMatch || !videoIdMatch[1]) return null;
 
             const videoId = videoIdMatch[1];
             const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
