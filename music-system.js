@@ -35,56 +35,73 @@ class MusicSystem {
         return this.queues.get(guildId);
     }
 
-    // Search YouTube
+    // Search YouTube - improved with better error handling
     async searchYouTube(query) {
         try {
-            // Check if query is a direct YouTube URL
-            if (query.includes('youtube.com') || query.includes('youtu.be') || query.includes('youtube')) {
+            // If it's already a YouTube URL, extract video ID
+            let videoId;
+            const youtubeUrlRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/;
+            const urlMatch = query.match(youtubeUrlRegex);
+            
+            if (urlMatch) {
+                videoId = urlMatch[1];
+            } else {
+                // Search for the video
                 try {
-                    const info = await ytdl.getInfo(query);
-                    return {
-                        source: 'youtube',
-                        title: info.videoDetails.title,
-                        artist: info.videoDetails.author.name,
-                        url: query,
-                        duration: parseInt(info.videoDetails.lengthSeconds),
-                        thumbnail: info.videoDetails.thumbnail.thumbnails[0]?.url,
-                        videoId: info.videoDetails.videoId
-                    };
-                } catch (error) {
-                    console.error('Error parsing direct YouTube URL:', error.message);
+                    const response = await axios.get(
+                        `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+                        {
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            timeout: 8000
+                        }
+                    );
+
+                    // Find video ID from search results
+                    const match = response.data.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+                    if (!match || !match[1]) {
+                        console.warn(`No video found for query: ${query}`);
+                        return null;
+                    }
+                    
+                    videoId = match[1];
+                } catch (searchError) {
+                    console.error(`YouTube search failed for "${query}":`, searchError.message);
+                    return null;
                 }
             }
 
-            // Search YouTube using a simpler approach
-            const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-            
-            // Better regex pattern to find videoId
-            const videoIdMatch = response.data.match(/watch\?v=([a-zA-Z0-9_-]{11})/);
-            
-            if (!videoIdMatch || !videoIdMatch[1]) return null;
+            if (!videoId) return null;
 
-            const videoId = videoIdMatch[1];
             const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-            
+
+            // Get video info
             try {
                 const info = await ytdl.getInfo(videoUrl);
+                const videoDetails = info.videoDetails;
+                
                 return {
                     source: 'youtube',
-                    title: info.videoDetails.title,
-                    artist: info.videoDetails.author.name,
+                    title: videoDetails.title,
+                    artist: videoDetails.author.name,
                     url: videoUrl,
-                    duration: parseInt(info.videoDetails.lengthSeconds),
-                    thumbnail: info.videoDetails.thumbnail.thumbnails[0]?.url,
+                    duration: parseInt(videoDetails.lengthSeconds) || 0,
+                    thumbnail: videoDetails.thumbnail.thumbnails?.[0]?.url || videoDetails.thumbnail.thumbnails?.[videoDetails.thumbnail.thumbnails.length - 1]?.url,
                     videoId: videoId
                 };
-            } catch (error) {
-                console.error('Error getting YouTube info:', error.message);
-                return null;
+            } catch (infoError) {
+                console.error(`Error getting YouTube info for ${videoId}:`, infoError.message);
+                // Return basic info even if getInfo fails
+                return {
+                    source: 'youtube',
+                    title: `Video ${videoId}`,
+                    artist: 'Unknown',
+                    url: videoUrl,
+                    duration: 0,
+                    thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                    videoId: videoId
+                };
             }
         } catch (error) {
             console.error('YouTube search error:', error.message);
