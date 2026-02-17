@@ -821,6 +821,22 @@ client.once('clientReady', () => {
     client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
     
+    // Check and log intents
+    console.log('✅ Client intents loaded:', client.intents);
+    console.log('✅ GuildVoiceStates intent active:', client.intents.has('GuildVoiceStates'));
+    
+    // Fetch members untuk semua guilds untuk populate cache
+    for (const [guildId, guild] of client.guilds.cache) {
+        try {
+            await guild.members.fetch().catch(() => {});
+            console.log(`✅ Fetched members for guild: ${guild.name}`);
+        } catch (error) {
+            console.error(`Error fetching members for ${guild.name}:`, error.message);
+        }
+    }
+    
+    console.log('✅ Voice State Update listener ready!');
+    
     // Set rotating presence
     const activities = [
         { name: 'role selection', type: 'WATCHING' },
@@ -3513,9 +3529,23 @@ client.on('guildMemberAdd', async (member) => {
 // Handle voice state changes (join/leave voice channel)
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
+        console.log('[VOICE EVENT TRIGGERED]');
+        
+        // Fetch member if not available
+        if (!newState.member) {
+            console.log(`[VOICE] Member not cached, fetching...`);
+            await newState.guild.members.fetch(newState.userId).catch(() => {});
+        }
+
         // Skip jika user/member tidak ada atau bot
-        if (!newState.member || !newState.user) return;
-        if (newState.user.bot) return;
+        if (!newState.member || !newState.user) {
+            console.log('[VOICE] Member or user not found after fetch');
+            return;
+        }
+        if (newState.user.bot) {
+            console.log(`[VOICE] Skipping bot: ${newState.user.username}`);
+            return;
+        }
 
         const guild = newState.guild;
         const member = newState.member;
@@ -3526,7 +3556,10 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
         console.log(`[VOICE] ${member.user.username} - Joined: ${joinedVoice}, Left: ${leftVoice}`);
 
-        if (!joinedVoice && !leftVoice) return;
+        if (!joinedVoice && !leftVoice) {
+            console.log('[VOICE] Not a join or leave event, skipping');
+            return;
+        }
 
         // Get notification channel (try to find text channel in same category)
         let notificationChannel = null;
