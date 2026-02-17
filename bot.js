@@ -802,7 +802,7 @@ async function playNextSong(guildId, interaction) {
     }
 }
 
-client.once('clientReady', () => {
+client.once('ready', async () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
     
@@ -820,7 +820,7 @@ client.once('clientReady', () => {
     // Temp storage while user memilih age sebelum submit modal
     client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
-    
+
     // Check and log intents
     console.log('✅ Client intents loaded:', client.intents);
     console.log('✅ GuildVoiceStates intent active:', client.intents.has('GuildVoiceStates'));
@@ -828,7 +828,7 @@ client.once('clientReady', () => {
     // Fetch members untuk semua guilds untuk populate cache
     for (const [guildId, guild] of client.guilds.cache) {
         try {
-            await guild.members.fetch().catch(() => {});
+            await guild.members.fetch();
             console.log(`✅ Fetched members for guild: ${guild.name}`);
         } catch (error) {
             console.error(`Error fetching members for ${guild.name}:`, error.message);
