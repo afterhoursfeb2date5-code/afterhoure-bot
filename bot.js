@@ -3524,6 +3524,8 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         const joinedVoice = !oldState.channel && newState.channel;
         const leftVoice = oldState.channel && !newState.channel;
 
+        console.log(`[VOICE] ${member.user.username} - Joined: ${joinedVoice}, Left: ${leftVoice}`);
+
         if (!joinedVoice && !leftVoice) return;
 
         // Get notification channel (try to find text channel in same category)
@@ -3531,21 +3533,29 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         
         // Get the voice channel (old if left, new if joined)
         const voiceChannel = joinedVoice ? newState.channel : oldState.channel;
+        console.log(`[VOICE] Voice Channel: ${voiceChannel.name}, Category: ${voiceChannel.parent?.name || 'None'}`);
         
         if (voiceChannel && voiceChannel.parent) {
             // Find text channels in the same category
             const textChannels = guild.channels.cache.filter(ch => 
                 ch.parentId === voiceChannel.parentId && ch.isTextBased() && !ch.isDMBased()
             );
+            console.log(`[VOICE] Found ${textChannels.size} text channels in category`);
             notificationChannel = textChannels.first();
         }
 
         // Fallback to hardcoded logs channel
         if (!notificationChannel) {
+            console.log(`[VOICE] No category text channels, trying fallback logs channel`);
             notificationChannel = guild.channels.cache.get(HARDCODED_LOGS_CHANNEL_ID);
         }
 
-        if (!notificationChannel) return;
+        if (!notificationChannel) {
+            console.log(`[VOICE] No notification channel found!`);
+            return;
+        }
+
+        console.log(`[VOICE] Using channel: ${notificationChannel.name}`);
 
         // Create message based on event
         let message = '';
@@ -3568,11 +3578,12 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 .setDescription(message);
 
             await notificationChannel.send({ embeds: [embed] }).catch(err => {
-                console.error(`Failed to send voice state notification: ${err.message}`);
+                console.error(`[VOICE] Failed to send notification: ${err.message}`);
             });
+            console.log(`[VOICE] Notification sent successfully`);
         }
     } catch (error) {
-        console.error('Error handling voice state update:', error);
+        console.error('[VOICE] Error handling voice state update:', error);
     }
 });
 
