@@ -17,7 +17,8 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.GuildMessageReactions
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.GuildVoiceStates
     ] 
 });
 
@@ -3506,6 +3507,71 @@ client.on('guildMemberAdd', async (member) => {
         }
     } catch (error) {
         console.error('Error handling guild member add:', error);
+    }
+});
+
+// Handle voice state changes (join/leave voice channel)
+client.on('voiceStateUpdate', async (oldState, newState) => {
+    try {
+        // Ignore bots
+        if (newState.user.bot) return;
+
+        const guild = newState.guild;
+        const member = newState.member;
+
+        // Determine if user joined or left
+        const joinedVoice = !oldState.channel && newState.channel;
+        const leftVoice = oldState.channel && !newState.channel;
+
+        if (!joinedVoice && !leftVoice) return;
+
+        // Get notification channel (try to find text channel in same category)
+        let notificationChannel = null;
+        
+        // Get the voice channel (old if left, new if joined)
+        const voiceChannel = joinedVoice ? newState.channel : oldState.channel;
+        
+        if (voiceChannel && voiceChannel.parent) {
+            // Find text channels in the same category
+            const textChannels = guild.channels.cache.filter(ch => 
+                ch.parentId === voiceChannel.parentId && ch.isTextBased() && !ch.isDMBased()
+            );
+            notificationChannel = textChannels.first();
+        }
+
+        // Fallback to hardcoded logs channel
+        if (!notificationChannel) {
+            notificationChannel = guild.channels.cache.get(HARDCODED_LOGS_CHANNEL_ID);
+        }
+
+        if (!notificationChannel) return;
+
+        // Create message based on event
+        let message = '';
+        let color = 0x5865F2; // Default blue
+        
+        if (joinedVoice) {
+            // User joined voice
+            message = `✅ **${member.user.username}** has joined 🎤 **${newState.channel.name}**\nUser ID: ${member.user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
+            color = 0x5865F2; // Blue
+        } 
+        else if (leftVoice) {
+            // User left voice
+            message = `❌ **${member.user.username}** has left 🎤 **${oldState.channel.name}**\nUser ID: ${member.user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
+            color = 0xFF0000; // Red
+        }
+
+        if (message) {
+            const embed = new EmbedBuilder()
+                .setColor(color)
+                .setDescription(message);
+
+            await notificationChannel.send({ embeds: [embed] }).catch(err => {
+                console.error(`Failed to send voice state notification: ${err.message}`);
+            });
+        }
+    } catch (error) {
+        console.error('Error handling voice state update:', error);
     }
 });
 
