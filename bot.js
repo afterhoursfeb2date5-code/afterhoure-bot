@@ -802,7 +802,7 @@ async function playNextSong(guildId, interaction) {
     }
 }
 
-client.once('ready', async () => {
+client.once('clientReady', async () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
     
@@ -821,20 +821,7 @@ client.once('ready', async () => {
     client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
 
-    // Check and log intents
-    console.log('✅ Client intents loaded:', client.intents);
-    console.log('✅ GuildVoiceStates intent active:', client.intents.has('GuildVoiceStates'));
-    
-    // Fetch members untuk semua guilds untuk populate cache
-    for (const [guildId, guild] of client.guilds.cache) {
-        try {
-            await guild.members.fetch();
-            console.log(`✅ Fetched members for guild: ${guild.name}`);
-        } catch (error) {
-            console.error(`Error fetching members for ${guild.name}:`, error.message);
-        }
-    }
-    
+    // Log voice state setup
     console.log('✅ Voice State Update listener ready!');
     
     // Set rotating presence
@@ -3530,31 +3517,28 @@ client.on('guildMemberAdd', async (member) => {
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
         console.log('[VOICE EVENT TRIGGERED]');
+        console.log(`[VOICE] User ID: ${newState.userId}, Guild: ${newState.guild.name}`);
         
-        // Fetch member if not available
-        if (!newState.member) {
-            console.log(`[VOICE] Member not cached, fetching...`);
-            await newState.guild.members.fetch(newState.userId).catch(() => {});
-        }
-
-        // Skip jika user/member tidak ada atau bot
-        if (!newState.member || !newState.user) {
-            console.log('[VOICE] Member or user not found after fetch');
+        // Get user first
+        const user = newState.user || await client.users.fetch(newState.userId).catch(() => null);
+        
+        if (!user) {
+            console.log('[VOICE] User not found');
             return;
         }
-        if (newState.user.bot) {
-            console.log(`[VOICE] Skipping bot: ${newState.user.username}`);
+        
+        if (user.bot) {
+            console.log(`[VOICE] Skipping bot: ${user.username}`);
             return;
         }
 
         const guild = newState.guild;
-        const member = newState.member;
 
         // Determine if user joined or left
         const joinedVoice = !oldState.channel && newState.channel;
         const leftVoice = oldState.channel && !newState.channel;
 
-        console.log(`[VOICE] ${member.user.username} - Joined: ${joinedVoice}, Left: ${leftVoice}`);
+        console.log(`[VOICE] ${user.username} - Joined: ${joinedVoice}, Left: ${leftVoice}`);
 
         if (!joinedVoice && !leftVoice) {
             console.log('[VOICE] Not a join or leave event, skipping');
@@ -3596,12 +3580,12 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         
         if (joinedVoice) {
             // User joined voice
-            message = `✅ **${member.user.username}** has joined 🎤 **${newState.channel.name}**\nUser ID: ${member.user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
+            message = `✅ **${user.username}** has joined 🎤 **${newState.channel.name}**\nUser ID: ${user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
             color = 0x5865F2; // Blue
         } 
         else if (leftVoice) {
             // User left voice
-            message = `❌ **${member.user.username}** has left 🎤 **${oldState.channel.name}**\nUser ID: ${member.user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
+            message = `❌ **${user.username}** has left 🎤 **${oldState.channel.name}**\nUser ID: ${user.id} • <t:${Math.floor(Date.now() / 1000)}:t>`;
             color = 0xFF0000; // Red
         }
 
