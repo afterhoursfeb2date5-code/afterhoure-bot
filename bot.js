@@ -3513,7 +3513,8 @@ client.on('guildMemberAdd', async (member) => {
 // Handle voice state changes (join/leave voice channel)
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
-        // Ignore bots
+        // Skip jika user/member tidak ada atau bot
+        if (!newState.member || !newState.user) return;
         if (newState.user.bot) return;
 
         const guild = newState.guild;
