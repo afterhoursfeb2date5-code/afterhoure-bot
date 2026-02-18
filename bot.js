@@ -818,9 +818,6 @@ client.once('clientReady', async () => {
     // Temp storage while user memilih age sebelum submit modal
     client._introTemp = new Map();
     console.log('📁 Configs loaded from file');
-
-    // Log voice state setup
-    console.log('✅ Voice State Update listener ready!');
     
     // Set rotating presence
     const activities = [
@@ -3464,8 +3461,8 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                 const boostCount = newMember.guild.premiumSubscriptionCount || 0;
                 const boostEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setTitle('<a:FAM_Booster2:1470223709154574427> Hi, ' + newMember + '! Thanks for the boost.')
-                    .setDescription(`Enjoy your special perks <a:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
+                    .setAuthor({ name: `${newMember.user.username} just boosted the server!` })
+                    .setDescription(`Hi, ${newMember}! Thanks for the boost.\nEnjoy your special perks <a:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
                     .setThumbnail(newMember.user.displayAvatarURL())
                     .setTimestamp()
                     .setFooter({ text: `We currently have ${boostCount} boosts` });
