@@ -3450,12 +3450,13 @@ client.on('messageReactionRemove', async (reaction, user) => {
 // Handle guild member update (detect boost)
 client.on('guildMemberUpdate', async (oldMember, newMember) => {
     try {
-        // Check jika member baru boost server
+        // Check jika member baru boost server atau boost lagi
         const wasNotBoosting = !oldMember.premiumSinceTimestamp;
         const isNowBoosting = newMember.premiumSinceTimestamp;
+        const boostTimestampChanged = oldMember.premiumSinceTimestamp !== newMember.premiumSinceTimestamp;
 
-        if (wasNotBoosting && isNowBoosting) {
-            // Member just boosted!
+        if ((wasNotBoosting && isNowBoosting) || (boostTimestampChanged && isNowBoosting)) {
+            // Member just boosted atau boost lagi!
             const channel = newMember.guild.channels.cache.get(HARDCODED_BOOSTER_CHANNEL_ID);
             if (channel) {
                 const boostCount = newMember.guild.premiumSubscriptionCount || 0;
