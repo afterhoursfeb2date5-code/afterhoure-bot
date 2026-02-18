@@ -1504,6 +1504,25 @@ client.on('interactionCreate', async (interaction) => {
                     adapterCreator: voiceChannel.guild.voiceAdapterCreator,
                 });
 
+                // Listen untuk status changes dan maintain connection
+                connection.on('stateChange', (oldState, newState) => {
+                    console.log(`Voice connection state changed: ${oldState.status} -> ${newState.status}`);
+                });
+
+                // Handle disconnection dan reconnect otomatis
+                connection.on(VoiceConnectionStatus.Disconnected, async () => {
+                    try {
+                        await entersState(connection, VoiceConnectionStatus.Connecting, 5_000);
+                    } catch (error) {
+                        console.log('Connection couldn\'t reconnect within 5 seconds. Destroying it.');
+                        connection.destroy();
+                    }
+                });
+
+                connection.on(VoiceConnectionStatus.Destroyed, () => {
+                    console.log(`Voice connection destroyed for guild ${voiceChannel.guild.id}`);
+                });
+
                 // Store connection reference
                 if (!client.voiceConnections) {
                     client.voiceConnections = new Map();
@@ -1517,7 +1536,7 @@ client.on('interactionCreate', async (interaction) => {
                 const connectEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
                     .setTitle('✅ Bot Connected')
-                    .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**!`)
+                    .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**! Bot akan tetap stay di channel sampai /disconnect di-jalankan.`)
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [connectEmbed], flags: 64 });
