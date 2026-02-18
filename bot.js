@@ -3517,10 +3517,10 @@ client.on('guildMemberAdd', async (member) => {
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
         console.log('[VOICE EVENT TRIGGERED]');
-        console.log(`[VOICE] User ID: ${newState.userId}, Guild: ${newState.guild.name}`);
+        console.log(`[VOICE] User ID: ${newState.id}, Guild: ${newState.guild.name}`);
         
         // Get user first
-        const user = newState.user || await client.users.fetch(newState.userId).catch(() => null);
+        const user = newState.user || await client.users.fetch(newState.id).catch(() => null);
         
         if (!user) {
             console.log('[VOICE] User not found');
