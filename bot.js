@@ -73,7 +73,6 @@ const musicManager = {
     
     async getYouTubeInfo(query) {
         try {
-            // Check if query is direct YouTube URL
             if (query.includes('youtube.com') || query.includes('youtu.be')) {
                 const info = await ytdl.getInfo(query);
                 return {
