@@ -28,7 +28,7 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
 // Music Manager
 const musicManager = {
-    queues: new Map(), // guildId -> {songs: [], playing: bool, player: AudioPlayer, connection: VoiceConnection}
+    queues: new Map(),
     
     getQueue(guildId) {
         if (!this.queues.has(guildId)) {
