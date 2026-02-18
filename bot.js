@@ -1536,7 +1536,7 @@ client.on('interactionCreate', async (interaction) => {
                 const connectEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
                     .setTitle('✅ Bot Connected')
-                    .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**! Bot akan tetap stay di channel sampai /disconnect di-jalankan.`)
+                    .setDescription(`Bot berhasil connect ke **${voiceChannel.name}**!`)
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [connectEmbed], flags: 64 });
@@ -2915,7 +2915,7 @@ client.on('messageCreate', async (message) => {
                     const query = args.slice(1).join(' ');
                     if (!query) {
                         return message.reply({ 
-                            content: '❌ Gunakan: `fam.play [lagu/artist/URL]`\n📍 Contoh:\n• `fam.play bohemian rhapsody`\n• `fam.play never gonna give you up`\n• `fam.play https://open.spotify.com/track/...` (akan convert ke YouTube)\n\n✨ Bot akan search di Spotify dulu, terus stream dari YouTube!', 
+                            content: '❌ Gunakan: `fam.play [lagu/artist/URL]`\n📍 Contoh:\n• `fam.play bohemian rhapsody`\n• `fam.play never gonna give you up`\n• `fam.play https://open.spotify.com/track/...` (akan convert ke YouTube)\n\n✨  search di Spotify dulu, terus stream dari YouTube!', 
                             flags: 64 
                         });
                     }
