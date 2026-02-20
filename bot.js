@@ -585,6 +585,41 @@ const commands = [
     new SlashCommandBuilder()
         .setName('test-greet')
         .setDescription('Test the welcome message'),
+    new SlashCommandBuilder()
+        .setName('add-button')
+        .setDescription('Add a button to existing message by Message ID')
+        .addStringOption(option =>
+            option.setName('message_id')
+                .setDescription('Message ID to add button to')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('label')
+                .setDescription('Button label/text')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('style')
+                .setDescription('Button style')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Primary (Blue)', value: 'Primary' },
+                    { name: 'Secondary (Gray)', value: 'Secondary' },
+                    { name: 'Success (Green)', value: 'Success' },
+                    { name: 'Danger (Red)', value: 'Danger' },
+                    { name: 'Link (Button Link)', value: 'Link' }
+                ))
+        .addStringOption(option =>
+            option.setName('value')
+                .setDescription('Custom ID (for interactive buttons) or URL (for link buttons)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('emoji')
+                .setDescription('Button emoji (optional)')
+                .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('disabled')
+                .setDescription('Disable button? (optional)')
+                .setRequired(false))
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -1887,6 +1922,124 @@ client.on('interactionCreate', async (interaction) => {
                 await interaction.reply({ embeds: [testEmbed], flags: 64 });
             } catch (error) {
                 console.error('Error testing greet:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'add-button') {
+            try {
+                const messageId = interaction.options.getString('message_id');
+                const label = interaction.options.getString('label');
+                const style = interaction.options.getString('style');
+                const value = interaction.options.getString('value');
+                const emoji = interaction.options.getString('emoji');
+                const disabled = interaction.options.getBoolean('disabled') || false;
+
+                // Fetch the message
+                let targetMessage;
+                try {
+                    targetMessage = await interaction.channel.messages.fetch(messageId);
+                } catch (error) {
+                    return await interaction.reply({
+                        content: `❌ Message ID tidak ditemukan! Pastikan message ID benar dan message ada di channel ini.`,
+                        flags: 64
+                    });
+                }
+
+                // Create button based on style
+                const button = new ButtonBuilder()
+                    .setLabel(label)
+                    .setDisabled(disabled);
+
+                if (emoji) {
+                    button.setEmoji(emoji);
+                }
+
+                // Set button style and action
+                if (style === 'Link') {
+                    // Link button requires URL
+                    try {
+                        new URL(value); // Validate URL
+                        button.setURL(value);
+                    } catch (e) {
+                        return await interaction.reply({
+                            content: `❌ URL tidak valid! Untuk Link button, gunakan URL yang valid (cth: https://example.com)`,
+                            flags: 64
+                        });
+                    }
+                    button.setStyle(ButtonStyle.Link);
+                } else {
+                    // Interactive buttons require custom ID
+                    if (value.length > 100) {
+                        return await interaction.reply({
+                            content: `❌ Custom ID terlalu panjang! Max 100 karakter.`,
+                            flags: 64
+                        });
+                    }
+                    button.setCustomId(value);
+                    
+                    switch (style) {
+                        case 'Primary':
+                            button.setStyle(ButtonStyle.Primary);
+                            break;
+                        case 'Secondary':
+                            button.setStyle(ButtonStyle.Secondary);
+                            break;
+                        case 'Success':
+                            button.setStyle(ButtonStyle.Success);
+                            break;
+                        case 'Danger':
+                            button.setStyle(ButtonStyle.Danger);
+                            break;
+                    }
+                }
+
+                // Get existing components or create new action row
+                const existingComponents = targetMessage.components || [];
+                let actionRow;
+
+                if (existingComponents.length > 0) {
+                    // Use existing action row (or add to first one if space available)
+                    const firstRow = existingComponents[0];
+                    if (firstRow.components && firstRow.components.length < 5) {
+                        // Can add to existing row
+                        firstRow.components.push(button);
+                        actionRow = firstRow;
+                    } else {
+                        // Create new action row
+                        actionRow = new ActionRowBuilder().addComponents(button);
+                        existingComponents.push(actionRow);
+                    }
+                } else {
+                    // Create new action row
+                    actionRow = new ActionRowBuilder().addComponents(button);
+                }
+
+                // Update message with new button
+                await targetMessage.edit({
+                    components: existingComponents.length > 0 ? existingComponents : [actionRow]
+                });
+
+                const successEmbed = new EmbedBuilder()
+                    .setColor('#00FF00')
+                    .setTitle('✅ Button Ditambahkan')
+                    .addFields(
+                        { name: 'Label', value: label, inline: true },
+                        { name: 'Style', value: style, inline: true },
+                        { name: 'Custom ID', value: style === 'Link' ? value : value, inline: false }
+                    )
+                    .setFooter({ text: `Message ID: ${messageId}` })
+                    .setTimestamp();
+
+                await interaction.reply({ 
+                    embeds: [successEmbed],
+                    flags: 64 
+                });
+            } catch (error) {
+                console.error('Error adding button:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
