@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { createCanvas, loadImage, registerFont } = require('canvas');
 const puppeteer = require('puppeteer');
+const Mee6LevelsApi = require('mee6-levels-api');
 require('dotenv').config();
 
 const MusicSystem = require('./music-system');
@@ -620,6 +621,20 @@ const commands = [
                 .setDescription('Disable button? (optional)')
                 .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+    new SlashCommandBuilder()
+        .setName('levels')
+        .setDescription('Check your level and XP status')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User to check levels (optional)')
+                .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('achievements')
+        .setDescription('Check your achievements')
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User to check achievements (optional)')
+                .setRequired(false)),
 ].map(command => command.toJSON());
 
 // Helper function to send logs
@@ -2040,6 +2055,153 @@ client.on('interactionCreate', async (interaction) => {
                 });
             } catch (error) {
                 console.error('Error adding button:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'levels') {
+            try {
+                const user = interaction.options.getUser('user') || interaction.user;
+                const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+                if (!member) {
+                    return await interaction.reply({
+                        content: `❌ User tidak ditemukan di server ini!`,
+                        flags: 64
+                    });
+                }
+
+                // Use MEE6 API to get user level/XP
+                let userData;
+                
+                try {
+                    userData = await Mee6LevelsApi.getUserXp(interaction.guild.id, user.id);
+                } catch (error) {
+                    console.error('MEE6 API Error:', error);
+                    return await interaction.reply({
+                        content: `❌ Tidak bisa mengambil data level. Pastikan MEE6 bot ada di server ini dan user sudah memiliki XP!`,
+                        flags: 64
+                    });
+                }
+
+                if (!userData) {
+                    return await interaction.reply({
+                        content: `❌ User belum memiliki level/XP di server ini!`,
+                        flags: 64
+                    });
+                }
+
+                // Format XP dengan thousand separator
+                const currentXp = userData.xp?.toLocaleString() || '0';
+                const totalXp = (userData.total_xp || 0).toLocaleString();
+
+                const embed = new EmbedBuilder()
+                    .setColor('#4A90E2')
+                    .setTitle('📊 Level Information')
+                    .setThumbnail(user.displayAvatarURL({ size: 512 }))
+                    .addFields(
+                        { name: '👤 Username', value: user.username, inline: true },
+                        { name: '📈 Level', value: `${userData.level || 0}`, inline: true },
+                        { name: '🏆 Rank', value: `#${userData.rank || 'N/A'}`, inline: true },
+                        { name: '⭐ Current XP', value: `${currentXp} XP`, inline: true },
+                        { name: '📍 Total XP', value: `${totalXp} XP`, inline: true },
+                        { name: '💻 Tag', value: userData.tag || user.tag, inline: true }
+                    )
+                    .setFooter({ text: `Requested by ${interaction.user.username}` })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Error in levels command:', error);
+                await interaction.reply({
+                    content: `❌ Error: ${error.message}`,
+                    flags: 64
+                });
+            }
+        }
+
+        if (commandName === 'achievements') {
+            try {
+                const user = interaction.options.getUser('user') || interaction.user;
+                const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+                if (!member) {
+                    return await interaction.reply({
+                        content: `❌ User tidak ditemukan di server ini!`,
+                        flags: 64
+                    });
+                }
+
+                // Use MEE6 API to get role rewards (achievements/badges)
+                let rewards;
+                
+                try {
+                    rewards = await Mee6LevelsApi.getRoleRewards(interaction.guild.id);
+                } catch (error) {
+                    console.error('MEE6 API Error:', error);
+                    return await interaction.reply({
+                        content: `❌ Tidak bisa mengambil data rewards. Pastikan MEE6 bot ada di server ini!`,
+                        flags: 64
+                    });
+                }
+
+                if (!rewards || rewards.length === 0) {
+                    return await interaction.reply({
+                        content: `❌ Server ini belum memiliki reward/achievement yang di-setup!`,
+                        flags: 64
+                    });
+                }
+
+                // Get user data to check which rewards they have
+                let userData;
+                try {
+                    userData = await Mee6LevelsApi.getUserXp(interaction.guild.id, user.id);
+                } catch (e) {
+                    return await interaction.reply({
+                        content: `❌ User belum memiliki data di server ini!`,
+                        flags: 64
+                    });
+                }
+
+                // Filter rewards that user has reached
+                const unlockedRewards = rewards.filter(reward => userData.level >= reward.level);
+                const lockedRewards = rewards.filter(reward => userData.level < reward.level);
+
+                // Format achievements
+                let achievementList = '';
+                if (unlockedRewards.length > 0) {
+                    achievementList += '**🔓 Unlocked:**\n';
+                    unlockedRewards.forEach((reward, idx) => {
+                        achievementList += `${idx + 1}. ✅ **${reward.role.name}** - Level ${reward.level}\n`;
+                    });
+                }
+
+                if (lockedRewards.length > 0) {
+                    if (achievementList.length > 0) achievementList += '\n';
+                    achievementList += '**🔒 Locked:**\n';
+                    lockedRewards.forEach((reward, idx) => {
+                        achievementList += `${idx + 1}. ❌ **${reward.role.name}** - Level ${reward.level}\n`;
+                    });
+                }
+
+                const embed = new EmbedBuilder()
+                    .setColor('#FFD700')
+                    .setTitle('🏅 User Rewards/Achievements')
+                    .setThumbnail(user.displayAvatarURL({ size: 512 }))
+                    .setDescription(achievementList || 'Tidak ada data')
+                    .addFields(
+                        { name: '🔓 Unlocked', value: `${unlockedRewards.length}/${rewards.length}`, inline: true },
+                        { name: '📊 User Level', value: `${userData.level || 0}`, inline: true }
+                    )
+                    .setFooter({ text: `Requested by ${interaction.user.username}` })
+                    .setTimestamp();
+
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('Error in achievements command:', error);
                 await interaction.reply({
                     content: `❌ Error: ${error.message}`,
                     flags: 64
