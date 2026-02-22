@@ -2063,6 +2063,10 @@ client.on('interactionCreate', async (interaction) => {
                 if (title) embed.setTitle(title);
                 if (description) embed.setDescription(description);
                 if (imageUrl) embed.setImage(imageUrl);
+                
+                // Remove color bar from embed
+                embed.setColor(null);
+                
                 const footerIcon = 'https://i.imgur.com/U76N6jc.png';
                 if (footerText) {
                     embed.setFooter({ text: footerText, iconURL: footerIcon });
