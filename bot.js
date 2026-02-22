@@ -1174,6 +1174,14 @@ client.on('interactionCreate', async (interaction) => {
                     .setPlaceholder('Enter embed description')
                     .setRequired(false);
 
+                // Color input
+                const colorInput = new TextInputBuilder()
+                    .setCustomId('embed_color')
+                    .setLabel('Color (hex, e.g., #FF0000)')
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder('#808080')
+                    .setRequired(false);
+
                 // Image URL input
                 const imageInput = new TextInputBuilder()
                     .setCustomId('embed_image')
@@ -1201,10 +1209,11 @@ client.on('interactionCreate', async (interaction) => {
                 // Add rows to modal
                 const row1 = new ActionRowBuilder().addComponents(titleInput);
                 const row2 = new ActionRowBuilder().addComponents(descriptionInput);
-                const row3 = new ActionRowBuilder().addComponents(imageInput);
-                const row4 = new ActionRowBuilder().addComponents(footerInput);
+                const row3 = new ActionRowBuilder().addComponents(colorInput);
+                const row4 = new ActionRowBuilder().addComponents(imageInput);
+                const row5 = new ActionRowBuilder().addComponents(footerInput);
 
-                modal.addComponents(row1, row2, row3, row4);
+                modal.addComponents(row1, row2, row3, row4, row5);
 
                 await interaction.showModal(modal);
             } catch (error) {
@@ -2047,6 +2056,7 @@ client.on('interactionCreate', async (interaction) => {
                 // Get values from modal
                 const title = interaction.fields.getTextInputValue('embed_title');
                 const description = interaction.fields.getTextInputValue('embed_description');
+                const color = interaction.fields.getTextInputValue('embed_color') || '#808080';
                 const imageUrl = interaction.fields.getTextInputValue('embed_image');
                 
                 // Use catch untuk optional fields
@@ -2062,11 +2072,14 @@ client.on('interactionCreate', async (interaction) => {
 
                 if (title) embed.setTitle(title);
                 if (description) embed.setDescription(description);
+                if (color) {
+                    try {
+                        embed.setColor(color);
+                    } catch (e) {
+                        embed.setColor('#808080'); // Default jika color invalid
+                    }
+                }
                 if (imageUrl) embed.setImage(imageUrl);
-                
-                // Remove color bar from embed
-                embed.setColor(null);
-                
                 const footerIcon = 'https://i.imgur.com/U76N6jc.png';
                 if (footerText) {
                     embed.setFooter({ text: footerText, iconURL: footerIcon });
