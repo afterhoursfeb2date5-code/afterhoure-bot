@@ -1,14 +1,10 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, AttachmentBuilder } = require('discord.js');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
-const ytdl = require('ytdl-core');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { createCanvas, loadImage, registerFont } = require('canvas');
 const puppeteer = require('puppeteer');
 require('dotenv').config();
-
-const MusicSystem = require('./music-system');
 
 const client = new Client({ 
     intents: [
@@ -23,90 +19,6 @@ const client = new Client({
 
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-
-// Music Manager
-const musicManager = {
-    queues: new Map(),
-    
-    getQueue(guildId) {
-        if (!this.queues.has(guildId)) {
-            this.queues.set(guildId, { songs: [], playing: false, player: null, connection: null });
-        }
-        return this.queues.get(guildId);
-    },
-    
-    async searchSpotify(query) {
-        try {
-            if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) return null;
-            
-            // Get Spotify access token
-            const auth = Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString('base64');
-            const tokenResponse = await axios.post('https://accounts.spotify.com/api/token', 
-                'grant_type=client_credentials',
-                { headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
-            
-            const accessToken = tokenResponse.data.access_token;
-            
-            // Search track
-            const searchResponse = await axios.get('https://api.spotify.com/v1/search', {
-                params: { q: query, type: 'track', limit: 1 },
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            
-            if (searchResponse.data.tracks.items.length === 0) return null;
-            
-            const track = searchResponse.data.tracks.items[0];
-            return {
-                title: `${track.name} - ${track.artists[0].name}`,
-                artist: track.artists[0].name,
-                url: track.external_urls.spotify,
-                thumbnail: track.album.images[0]?.url
-            };
-        } catch (error) {
-            console.error('Spotify search error:', error.message);
-            return null;
-        }
-    },
-    
-    async getYouTubeInfo(query) {
-        try {
-            if (query.includes('youtube.com') || query.includes('youtu.be')) {
-                const info = await ytdl.getInfo(query);
-                return {
-                    title: info.videoDetails.title,
-                    url: query,
-                    thumbnail: info.videoDetails.thumbnail.thumbnails[0].url,
-                    duration: parseInt(info.videoDetails.lengthSeconds),
-                    artist: info.videoDetails.author.name
-                };
-            }
-            
-            // Search YouTube
-            const response = await axios.get(`https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
-            const videoIdMatch = response.data.match(/\\"\\"\\"\""\/watch\\?v=([a-zA-Z0-9_-]{11})/);
-            
-            if (!videoIdMatch) return null;
-            
-            const videoId = videoIdMatch[1];
-            const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-            const info = await ytdl.getInfo(videoUrl);
-            
-            return {
-                title: info.videoDetails.title,
-                url: videoUrl,
-                thumbnail: info.videoDetails.thumbnail.thumbnails[0].url,
-                duration: parseInt(info.videoDetails.lengthSeconds),
-                artist: info.videoDetails.author.name
-            };
-        } catch (error) {
-            console.error('YouTube search error:', error.message);
-            return null;
-        }
-    }
-};
 
 // Config file paths
 const CONFIG_DIR = path.join(__dirname, 'config');
@@ -779,62 +691,6 @@ const rest = new REST({ version: '10' }).setToken(TOKEN);
     }
 })();
 
-// Helper function to play next song
-async function playNextSong(guildId, interaction) {
-    const queue = musicManager.getQueue(guildId);
-    
-    if (!queue.connection || queue.songs.length === 0) {
-        queue.playing = false;
-        return;
-    }
-
-    queue.playing = true;
-    const track = queue.songs[0];
-
-    try {
-        const stream = ytdl(track.url, {
-            quality: 'highestaudio',
-            filter: 'audioonly'
-        });
-
-        const resource = createAudioResource(stream);
-        queue.player.play(resource);
-
-        // Listen for track end
-        queue.player.once(AudioPlayerStatus.Idle, async () => {
-            queue.songs.shift();
-            if (queue.songs.length > 0) {
-                await playNextSong(guildId, null);
-            } else {
-                queue.playing = false;
-            }
-        });
-
-        if (interaction) {
-            const playEmbed = new EmbedBuilder()
-                .setColor('#1DB954')
-                .setTitle('🎵 Now Playing')
-                .setDescription(`**${track.title}**`)
-                .setThumbnail(track.thumbnail)
-                .addFields(
-                    { name: 'Artist', value: track.artist, inline: true },
-                    { name: 'Queue', value: `${queue.songs.length - 1} songs remaining`, inline: true }
-                )
-                .setTimestamp();
-
-            await interaction.editReply({ embeds: [playEmbed] }).catch(() => {});
-        }
-    } catch (error) {
-        console.error('Error playing track:', error);
-        queue.songs.shift();
-        if (queue.songs.length > 0) {
-            await playNextSong(guildId, null);
-        } else {
-            queue.playing = false;
-        }
-    }
-}
-
 client.once('clientReady', async () => {
     console.log(`✅ ${client.user.tag} udah online!`);
     console.log(`🏠 Di ${client.guilds.cache.size} server`);
@@ -845,10 +701,6 @@ client.once('clientReady', async () => {
     client.autoResponses = loadAutoResponses();
     client.introductions = loadIntroductions();
     client.reactionRoles = loadReactionRoles();
-    
-    // Initialize Music System
-    client.musicSystem = new MusicSystem(client);
-    console.log('🎵 Music system initialized');
     
     // Temp storage while user memilih age sebelum submit modal
     client._introTemp = new Map();
@@ -1564,10 +1416,6 @@ client.on('interactionCreate', async (interaction) => {
                 }
                 client.voiceConnections.set(voiceChannel.guild.id, connection);
 
-                // Set connection in music system queue
-                const queue = client.musicSystem.getQueue(interaction.guildId);
-                queue.connection = connection;
-
                 const connectEmbed = new EmbedBuilder()
                     .setColor('#00FF00')
                     .setTitle('✅ Bot Connected')
@@ -1599,11 +1447,6 @@ client.on('interactionCreate', async (interaction) => {
                 const connection = client.voiceConnections.get(guildId);
                 connection.destroy();
                 client.voiceConnections.delete(guildId);
-
-                // Clear music queue connection
-                const queue = client.musicSystem.getQueue(guildId);
-                queue.connection = null;
-                queue.playing = false;
 
                 const disconnectEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
@@ -3036,22 +2879,12 @@ client.on('messageCreate', async (message) => {
                                 inline: false 
                             },
                             { 
-                                name: '🎵 Music Commands (Spotify + YouTube)', 
-                                value: '`fam.play` `fam.skip` `fam.pause` `fam.resume` `fam.queue` `fam.stop` `fam.shuffle` `fam.loop` `fam.nowplaying`', 
-                                inline: false 
-                            },
-                            { 
-                                name: 'fam.play [query/URL]', 
-                                value: '✨ **HYBRID SEARCH!**\n🎵 Cari di Spotify dulu (album art, metadata)\n▶️ Stream dari YouTube (compatibility)\n📍 Contoh: `fam.play bohemian rhapsody`\nWorks: Lagu, artist, URL Spotify\n\n*Source badges:*\n🎵 = Spotify found, YouTube stream\n▶️ = YouTube only\n🟢 = Spotify only (can\'t stream)', 
-                                inline: false 
-                            },
-                            { 
                                 name: 'fam.list', 
                                 value: 'Tampilkan list semua commands', 
                                 inline: false 
                             }
                         )
-                        .setFooter({ text: 'Gunakan fam.[command] untuk menjalankan command | Spotify credentials: ' + (SPOTIFY_CLIENT_ID ? '✅ Configured' : '❌ Missing') });
+                        .setFooter({ text: 'Gunakan fam.[command] untuk menjalankan command' });
 
                     await message.reply({ embeds: [listEmbed] });
                 } catch (error) {
@@ -3060,407 +2893,10 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // ===== MUSIC COMMANDS =====
-
-            // fam.play [YouTube URL / Spotify URL / query] - Hybrid search
-            else if (command === 'play') {
-                try {
-                    const query = args.slice(1).join(' ');
-                    if (!query) {
-                        return message.reply({ 
-                            content: '❌ Gunakan: `fam.play [lagu/artist/URL]`\n📍 Contoh:\n• `fam.play bohemian rhapsody`\n• `fam.play never gonna give you up`\n• `fam.play https://open.spotify.com/track/...` (akan convert ke YouTube)\n\n✨  search di Spotify dulu, terus stream dari YouTube!', 
-                            flags: 64 
-                        });
-                    }
-
-                    const loadingMsg = await message.reply({ content: '🔍 Searching di Spotify & YouTube...' });
-
-                    try {
-                        // Use hybrid search (Spotify + YouTube)
-                        const result = await client.musicSystem.searchBoth(
-                            query,
-                            SPOTIFY_CLIENT_ID,
-                            SPOTIFY_CLIENT_SECRET
-                        );
-                        
-                        if (!result) {
-                            await loadingMsg.edit({ content: '❌ Lagu tidak ditemukan! Coba search dengan nama artist/lagu yang lebih jelas.' });
-                            return;
-                        }
-
-                        // Handle Spotify-only result (no YouTube match)
-                        if (result.source === 'spotify' && !result.videoId) {
-                            await loadingMsg.edit({ 
-                                content: '⚠️ Lagu ditemukan di Spotify tapi tidak ada match di YouTube.\nCoba search dengan keyword lain atau gunakan title lengkap + artist!' 
-                            });
-                            return;
-                        }
-
-                        // Add to queue
-                        const song = {
-                            title: result.title,
-                            artist: result.artist,
-                            duration: result.duration,
-                            videoId: result.videoId,
-                            thumbnail: result.thumbnail,
-                            source: result.source || 'youtube',
-                            spotifyUrl: result.spotifyUrl || null,
-                            hybridInfo: result.hybridInfo || '',
-                            requestedBy: message.author.id
-                        };
-
-                        await client.musicSystem.addToQueue(message.guildId, song);
-
-                        const queueList = client.musicSystem.getFullQueue(message.guildId);
-                        
-                        // Start playback if not playing
-                        if (!client.musicSystem.getQueue(message.guildId).playing && queueList.length === 1) {
-                            // Auto-play first song
-                            setTimeout(() => {
-                                client.musicSystem.playNextSong(message.guildId).catch(err => {
-                                    console.error('Auto-play error:', err);
-                                });
-                            }, 500);
-                        }
-                        
-                        // Build embed with source info
-                        let sourceEmoji = '▶️';
-                        let sourceText = 'YouTube';
-                        if (result.source === 'hybrid') {
-                            sourceEmoji = '🎵';
-                            sourceText = 'Spotify → YouTube';
-                        } else if (result.source === 'spotify') {
-                            sourceEmoji = '🟢';
-                            sourceText = 'Spotify';
-                        }
-                        
-                        const playEmbed = new EmbedBuilder()
-                            .setColor(result.source === 'hybrid' ? '#1DB954' : '#FF0000')
-                            .setTitle('🎵 Added to Queue')
-                            .setDescription(`[${song.title}](https://www.youtube.com/watch?v=${song.videoId})`)
-                            .addFields(
-                                { name: 'Artist', value: song.artist || 'Unknown', inline: true },
-                                { name: 'Duration', value: client.musicSystem.formatTime(song.duration), inline: true },
-                                { name: 'Queue Position', value: `#${queueList.length}`, inline: true },
-                                { name: 'Requested By', value: `<@${message.author.id}>`, inline: true }
-                            )
-                            .setThumbnail(song.thumbnail)
-                            .setFooter({ text: `Source: ${sourceEmoji} ${sourceText}` })
-                            .setTimestamp();
-
-                        await loadingMsg.edit({ content: '', embeds: [playEmbed] });
-
-                    } catch (searchError) {
-                        console.error('Error searching:', searchError);
-                        await loadingMsg.edit({ content: `❌ Error saat search: ${searchError.message}` });
-                    }
-
-                } catch (error) {
-                    console.error('Error executing play command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.skip - Skip current song
-            else if (command === 'skip') {
-                try {
-                    const queueFull = client.musicSystem.getFullQueue(message.guildId);
-                    const currentSong = client.musicSystem.getCurrentSong(message.guildId);
-                    
-                    if (!currentSong && queueFull.length === 0) {
-                        return message.reply({ 
-                            content: '❌ Queue kosong! Tidak ada lagu yang bisa di-skip.', 
-                            flags: 64 
-                        });
-                    }
-
-                    const nextSong = await client.musicSystem.skipSong(message.guildId);
-
-                    const skipEmbed = new EmbedBuilder()
-                        .setColor('#FFA500')
-                        .setTitle('⏭️ Song Skipped')
-                        .addFields(
-                            { name: 'Skipped', value: `${currentSong?.title || 'N/A'}`, inline: false },
-                            { name: 'Now Playing', value: `${nextSong?.title || 'Queue Empty'}`, inline: false }
-                        )
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [skipEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing skip command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.pause - Pause music
-            else if (command === 'pause') {
-                try {
-                    const currentSong = client.musicSystem.getCurrentSong(message.guildId);
-                    if (!currentSong) {
-                        return message.reply({ 
-                            content: '❌ Tidak ada lagu yang sedang dimainkan!', 
-                            flags: 64 
-                        });
-                    }
-
-                    client.musicSystem.pausePlayback(message.guildId);
-
-                    const pauseEmbed = new EmbedBuilder()
-                        .setColor('#FFA500')
-                        .setTitle('⏸️ Music Paused')
-                        .setDescription(`Paused: **${currentSong.title}**`)
-                        .setThumbnail(currentSong.thumbnail)
-                        .setFooter({ text: 'Gunakan fam.resume untuk melanjutkan' })
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [pauseEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing pause command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.resume - Resume music
-            else if (command === 'resume') {
-                try {
-                    const currentSong = client.musicSystem.getCurrentSong(message.guildId);
-                    if (!currentSong) {
-                        return message.reply({ 
-                            content: '❌ Tidak ada lagu yang sedang dimainkan!', 
-                            flags: 64 
-                        });
-                    }
-
-                    client.musicSystem.resumePlayback(message.guildId);
-
-                    const resumeEmbed = new EmbedBuilder()
-                        .setColor('#00FF00')
-                        .setTitle('▶️ Music Resumed')
-                        .setDescription(`Resumed: **${currentSong.title}**`)
-                        .setThumbnail(currentSong.thumbnail)
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [resumeEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing resume command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.queue - Show queue
-            else if (command === 'queue') {
-                try {
-                    const queue = client.musicSystem.getFullQueue(message.guildId);
-                    const currentSong = client.musicSystem.getCurrentSong(message.guildId);
-
-                    if (!currentSong && queue.length === 0) {
-                        return message.reply({ 
-                            content: '❌ Queue kosong! Gunakan `fam.play` untuk menambahkan lagu.', 
-                            flags: 64 
-                        });
-                    }
-
-                    let description = '';
-
-                    if (currentSong) {
-                        // Determine source emoji
-                        let sourceEmoji = '▶️';
-                        if (currentSong.source === 'hybrid') sourceEmoji = '🎵';
-                        else if (currentSong.source === 'spotify') sourceEmoji = '🟢';
-                        
-                        description += `**Now Playing:**\n${sourceEmoji} [${currentSong.title}](https://www.youtube.com/watch?v=${currentSong.videoId})\n`;
-                        description += `⏱️ ${client.musicSystem.formatTime(currentSong.duration)}\n\n`;
-                    }
-
-                    if (queue.length > 0) {
-                        description += `**Up Next (${queue.length} songs):**\n`;
-                        const displayCount = Math.min(queue.length, 10);
-                        for (let i = 0; i < displayCount; i++) {
-                            const song = queue[i];
-                            
-                            // Determine source emoji per track
-                            let sourceEmoji = '▶️';
-                            if (song.source === 'hybrid') sourceEmoji = '🎵';
-                            else if (song.source === 'spotify') sourceEmoji = '🟢';
-                            
-                            description += `${i + 1}. ${sourceEmoji} [${song.title}](https://www.youtube.com/watch?v=${song.videoId}) - ${client.musicSystem.formatTime(song.duration)}\n`;
-                        }
-
-                        if (queue.length > 10) {
-                            description += `\n... dan ${queue.length - 10} lagu lainnya`;
-                        }
-                    } else {
-                        description += '**Up Next:** Queue kosong\n';
-                    }
-
-                    const guildQueue = client.musicSystem.getQueue(message.guildId);
-                    const loopMode = guildQueue.loop || 'off';
-                    const loopEmoji = loopMode === 'one' ? '🔂' : loopMode === 'all' ? '🔁' : '➡️';
-
-                    const queueEmbed = new EmbedBuilder()
-                        .setColor('#0099FF')
-                        .setTitle('🎵 Music Queue')
-                        .setDescription(description)
-                        .setFooter({ text: `Loop Mode: ${loopEmoji} ${loopMode} | 🎵 = Spotify | ▶️ = YouTube` })
-                        .setTimestamp();
-
-                    if (currentSong?.thumbnail) {
-                        queueEmbed.setThumbnail(currentSong.thumbnail);
-                    }
-
-                    await message.reply({ embeds: [queueEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing queue command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.stop - Stop music and clear queue
-            else if (command === 'stop') {
-                try {
-                    const guildQueue = client.musicSystem.getQueue(message.guildId);
-                    const wasPlaying = client.musicSystem.getCurrentSong(message.guildId) !== null;
-                    client.musicSystem.stopPlayback(message.guildId);
-
-                    const stopEmbed = new EmbedBuilder()
-                        .setColor('#FF0000')
-                        .setTitle('⏹️ Music Stopped')
-                        .setDescription(wasPlaying ? 'Musik dihentikan dan queue dibersihkan.' : 'Queue telah dibersihkan.')
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [stopEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing stop command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.shuffle - Shuffle queue
-            else if (command === 'shuffle') {
-                try {
-                    const queue = client.musicSystem.getFullQueue(message.guildId);
-                    if (queue.length < 2) {
-                        return message.reply({ 
-                            content: '❌ Queue minimal harus punya 2 lagu untuk di-shuffle!', 
-                            flags: 64 
-                        });
-                    }
-
-                    client.musicSystem.shuffleQueue(message.guildId);
-
-                    const shuffleEmbed = new EmbedBuilder()
-                        .setColor('#9900FF')
-                        .setTitle('🔀 Queue Shuffled')
-                        .setDescription(`Queue berhasil di-shuffle! Sekarang ada ${queue.length} lagu dalam queue.`)
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [shuffleEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing shuffle command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.loop [off|one|all] - Set loop mode
-            else if (command === 'loop') {
-                try {
-                    const mode = (args[1] || 'off').toLowerCase();
-                    if (!['off', 'one', 'all'].includes(mode)) {
-                        return message.reply({ 
-                            content: '❌ Gunakan: `fam.loop [off|one|all]`\n- `off`: Tidak ada looping\n- `one`: Loop lagu sekarang (repeat)\n- `all`: Loop semua queue', 
-                            flags: 64 
-                        });
-                    }
-
-                    const guildQueue = client.musicSystem.getQueue(message.guildId);
-                    guildQueue.loop = mode;
-
-                    const loopEmojis = { 'off': '➡️', 'one': '🔂', 'all': '🔁' };
-                    const loopDescriptions = {
-                        'off': 'Loop dimatikan - lagu akan berhenti setelah queue selesai',
-                        'one': 'Lagu sekarang akan diulang',
-                        'all': 'Semua lagu dalam queue akan diulang'
-                    };
-
-                    const loopEmbed = new EmbedBuilder()
-                        .setColor('#00CCFF')
-                        .setTitle(`${loopEmojis[mode]} Loop Mode Changed`)
-                        .setDescription(loopDescriptions[mode])
-                        .addFields({ name: 'Mode', value: mode.toUpperCase(), inline: true })
-                        .setTimestamp();
-
-                    await message.reply({ embeds: [loopEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing loop command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
-            // fam.nowplaying - Show current song info
-            else if (command === 'nowplaying') {
-                try {
-                    const currentSong = client.musicSystem.getCurrentSong(message.guildId);
-                    if (!currentSong) {
-                        return message.reply({ 
-                            content: '❌ Tidak ada lagu yang sedang dimainkan!', 
-                            flags: 64 
-                        });
-                    }
-
-                    const queueFull = client.musicSystem.getFullQueue(message.guildId);
-                    const guildQueue = client.musicSystem.getQueue(message.guildId);
-
-                    // Determine source display
-                    let sourceDisplay = '▶️ YouTube';
-                    let sourceColor = '#FF0000';
-                    if (currentSong.source === 'hybrid') {
-                        sourceDisplay = '🎵 Spotify → YouTube';
-                        sourceColor = '#1DB954';
-                    } else if (currentSong.source === 'spotify') {
-                        sourceDisplay = '🟢 Spotify';
-                        sourceColor = '#1DB954';
-                    }
-
-                    const nowPlayingEmbed = new EmbedBuilder()
-                        .setColor(sourceColor)
-                        .setTitle('🎵 Now Playing')
-                        .setDescription(`[${currentSong.title}](https://www.youtube.com/watch?v=${currentSong.videoId})`)
-                        .addFields(
-                            { name: 'Artist', value: currentSong.artist || 'Unknown', inline: true },
-                            { name: 'Duration', value: client.musicSystem.formatTime(currentSong.duration), inline: true },
-                            { name: 'Source', value: sourceDisplay, inline: true },
-                            { name: 'Requested By', value: `<@${currentSong.requestedBy}>`, inline: true },
-                            { name: 'Queue Position', value: `1 / ${queueFull.length + 1}`, inline: true }
-                        )
-                        .setThumbnail(currentSong.thumbnail)
-                        .setFooter({ text: `Loop: ${guildQueue.loop || 'off'}` })
-                        .setTimestamp();
-
-                    if (currentSong.hybridInfo) {
-                        nowPlayingEmbed.addFields({
-                            name: '✨ Info',
-                            value: currentSong.hybridInfo,
-                            inline: false
-                        });
-                    }
-
-                    await message.reply({ embeds: [nowPlayingEmbed] });
-
-                } catch (error) {
-                    console.error('Error executing nowplaying command:', error);
-                    await message.reply({ content: `❌ Error: ${error.message}`, flags: 64 });
-                }
-            }
-
             return;
         }
+
+        // Handle autoresponses
 
 
         // Handle autoresponses
@@ -3634,7 +3070,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
                 const boostCount = newMember.guild.premiumSubscriptionCount || 0;
                 const boostEmbed = new EmbedBuilder()
                     .setColor(0x5865F2)
-                    .setAuthor({ name: `${newMember.user.username} just boosted the server!` })
+                    .setAuthor({ name: `<a:FAM_Booster2:1470223709154574427> ${newMember.user.username} just boosted the server!` })
                     .setDescription(`Hi, ${newMember}! Thanks for the boost.\nEnjoy your special perks <a:FAM_Booster:1470223346741416043>\n\nClaim your Custom Role at <#1469743159306227855>`)
                     .setThumbnail(newMember.user.displayAvatarURL())
                     .setTimestamp()
